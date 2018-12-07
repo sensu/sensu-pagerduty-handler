@@ -7,6 +7,11 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [1.0.0] - 2018-12-07
+
+### Changed
+- No longer JSON serializing custom details (no need to)
+
 ## [0.0.3] - 2018-12-05
 
 ### Changed
