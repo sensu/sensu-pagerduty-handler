@@ -71,10 +71,10 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("event does not contain check")
 	}
 
-	return manageIncident(eventJSON, event)
+	return manageIncident(event)
 }
 
-func manageIncident(eventJSON []byte, event *types.Event) error {
+func manageIncident(event *types.Event) error {
 	severity := "warning"
 
 	if event.Check.Status < 3 {
@@ -87,7 +87,7 @@ func manageIncident(eventJSON []byte, event *types.Event) error {
 		Component: event.Check.Name,
 		Severity:  severity,
 		Summary:   event.Check.Output,
-		Details:   string(eventJSON),
+		Details:   event,
 	}
 
 	action := "trigger"
