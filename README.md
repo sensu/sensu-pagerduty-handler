@@ -1,7 +1,7 @@
-# Sensu PagerDuty Handler
+# Sensu Go PagerDuty Handler
 TravisCI: [![TravisCI Build Status](https://travis-ci.org/sensu/sensu-pagerduty-handler.svg?branch=master)](https://travis-ci.org/sensu/sensu-pagerduty-handler)
 
-The Sensu PagerDuty Handler is a [Sensu Event Handler][3] which manages
+The Sensu Go PagerDuty Handler is a [Sensu Event Handler][3] which manages
 [PagerDuty][2] incidents, for alerting operators. With this handler,
 [Sensu][1] can trigger and resolve PagerDuty incidents.
 
