@@ -7,6 +7,14 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [1.0.1] - 2018-12-12
+### Added
+- Bonsai Asset Index configuration
+
+### Changed
+- Dropped odd platforms and architectures from the build matrix (e.g.
+dragonfly and mips).
+
 ## [1.0.0] - 2018-12-07
 
 ### Changed
