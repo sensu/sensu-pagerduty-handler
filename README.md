@@ -78,7 +78,7 @@ Flags:
 
 ```
 
-**Note:** Make sure to set the `PAGERDUTY_TOKEN` environment variable for sensitive credentials in production to prevent leaking into system process table. Please remember command arguments can be viewed by unprivileged users using commands such as `ps` or `top`. The `--testing` argument is provided as an override primarily for testing purposes. 
+**Note:** Make sure to set the `PAGERDUTY_TOKEN` environment variable for sensitive credentials in production to prevent leaking into system process table. Please remember command arguments can be viewed by unprivileged users using commands such as `ps` or `top`. The `--token` argument is provided as an override primarily for testing purposes. 
 
 ## Contributing
 
