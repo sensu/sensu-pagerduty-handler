@@ -31,13 +31,17 @@ func configureRootCommand() *cobra.Command {
 		RunE:  run,
 	}
 
+	/*
+	   Security Sensitive flags
+	     - default to using envvar value
+	     - do not mark as required
+	     - manually test for empty value
+	*/
 	cmd.Flags().StringVarP(&authToken,
 		"token",
 		"t",
-		"",
-		"The PagerDuty V2 API authentication token")
-
-	_ = cmd.MarkFlagRequired("token")
+		os.Getenv("PAGERDUTY_TOKEN"),
+		"The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var")
 
 	return cmd
 }
@@ -46,6 +50,12 @@ func run(cmd *cobra.Command, args []string) error {
 	if len(args) != 0 {
 		_ = cmd.Help()
 		return fmt.Errorf("invalid argument(s) received")
+	}
+
+	if authToken == "" {
+		_ = cmd.Help()
+		return fmt.Errorf("authentication token is empty")
+
 	}
 
 	if stdin == nil {

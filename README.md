@@ -29,7 +29,10 @@ Example Sensu Go handler definition:
     },
     "spec": {
         "type": "pipe",
-        "command": "sensu-pagerduty-handler --token SECRET",
+        "command": "sensu-pagerduty-handler",
+        "env_vars": [
+          "PAGERDUTY_TOKEN=SECRET",
+        ],
         "timeout": 10,
         "filters": [
             "is_incident"
@@ -71,8 +74,11 @@ Usage:
 
 Flags:
   -h, --help           help for sensu-pagerduty-handler
-  -t, --token string   The PagerDuty V2 API authentication token
+  -t, --token string   The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var
+
 ```
+
+**Note:** Make sure to set the `PAGERDUTY_TOKEN` environment variable for sensitive credentials in production to prevent leaking into system process table. Please remember command arguments can be viewed by unprivileged users using commands such as `ps` or `top`. The `--token` argument is provided as an override primarily for testing purposes. 
 
 ## Contributing
 
