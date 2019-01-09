@@ -6,6 +6,8 @@ and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [1.0.2] - 2019-01-09
 ### Added
 - Use PAGERDUTY_TOKEN envvar for default value for accessToken, for security. This is a backwards compatible change.
 
