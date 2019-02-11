@@ -92,11 +92,13 @@ func manageIncident(event *types.Event) error {
 		severity = severities[event.Check.Status]
 	}
 
+	summary := fmt.Sprintf("%s/%s : %s", event.Entity.Name, event.Check.Name, event.Check.Output)
+
 	pdPayload := pagerduty.V2Payload{
 		Source:    event.Entity.Name,
 		Component: event.Check.Name,
 		Severity:  severity,
-		Summary:   event.Check.Output,
+		Summary:   summary,
 		Details:   event,
 	}
 
