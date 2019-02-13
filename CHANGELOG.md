@@ -6,9 +6,11 @@ and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Changed
 - Updated travis, goreleaser configurations.
 - Updated license.
+- Added hostname and check name to summary alert
 
 ### Removed
 - Removed redundant post deploy scripts for travis.
