@@ -31,7 +31,7 @@ Example Sensu Go handler definition:
         "type": "pipe",
         "command": "sensu-pagerduty-handler",
         "env_vars": [
-          "PAGERDUTY_TOKEN=SECRET",
+          "PAGERDUTY_TOKEN=SECRET"
         ],
         "timeout": 10,
         "filters": [
