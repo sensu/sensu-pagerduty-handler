@@ -30,12 +30,12 @@
   revision = "fe8f9c4593d05f029afeb2c08c3e220120306506"
 
 [[constraint]]
-  name = "github.com/sensu/sensu-plugins-go-library"
-  version = "0.2.0"
+  name = "github.com/sensu/sensu-go"
+  version = "5.9.0"
 
 [[constraint]]
-  name = "github.com/stretchr/testify"
-  version = "1.2.2"
+  name = "github.com/sensu/sensu-plugins-go-library"
+  version = "0.2.0"
 
 [prune]
   go-tests = true

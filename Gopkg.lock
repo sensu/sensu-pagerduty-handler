@@ -143,8 +143,8 @@
     "util/strings",
   ]
   pruneopts = "UT"
-  revision = "d94ea66db09a7587f7ed6968dbb03fa7eebc91e0"
-  version = "5.8.0"
+  revision = "078f6253fcc7b1b937274c7cb14b26b8db52fc4a"
+  version = "5.9.0"
 
 [[projects]]
   digest = "1:8cd72fbcf8f18cf753ca9c40723eaef3356e166437f33d219d977581b7024d14"

@@ -29,6 +29,7 @@ var (
 			Shorthand: "t",
 			Usage:     "The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var",
 			Value:     &config.authToken,
+			Default:   "",
 		},
 	}
 )
