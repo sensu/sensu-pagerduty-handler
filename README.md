@@ -32,6 +32,7 @@ Example Sensu Go handler definition:
         "command": "sensu-pagerduty-handler",
         "env_vars": [
           "PAGERDUTY_TOKEN=SECRET",
+          "PAGERDUTY_DEDUP_KEY"
         ],
         "timeout": 10,
         "filters": [
@@ -73,12 +74,20 @@ Usage:
   sensu-pagerduty-handler [flags]
 
 Flags:
-  -h, --help           help for sensu-pagerduty-handler
-  -t, --token string   The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var
-
+  -d, --dedup-key string            The Sensu event label specifying the PagerDuty V2 API deduplication key, use default from PAGERDUTY_DEDUP_KEY env var
+  -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, use default from PAGERDUTY_DEDUP_KEY_TEMPLATE env var
+  -h, --help                        help for sensu-pagerduty-handler
+  -t, --token string                The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var
 ```
 
 **Note:** Make sure to set the `PAGERDUTY_TOKEN` environment variable for sensitive credentials in production to prevent leaking into system process table. Please remember command arguments can be viewed by unprivileged users using commands such as `ps` or `top`. The `--token` argument is provided as an override primarily for testing purposes. 
+
+### Deduplication Key Priority
+The deduplication key is determined using the following priority:
+1. --dedup-key  --  specifies the entity label containing the key
+1. --dedup-key-template  --  a template containing the values
+1. the default value containing the entity and check names
+
 
 ## Contributing
 

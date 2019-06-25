@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/PagerDuty/go-pagerduty"
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/sensu/sensu-plugins-go-library/sensu"
+	"github.com/sensu/sensu-plugins-go-library/templates"
 )
 
 type HandlerConfig struct {
 	sensu.PluginConfig
-	authToken string
+	authToken        string
+	dedupKey         string
+	dedupKeyTemplate string
 }
 
 var (
@@ -29,6 +31,24 @@ var (
 			Shorthand: "t",
 			Usage:     "The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var",
 			Value:     &config.authToken,
+			Default:   "",
+		},
+		{
+			Path:      "dedup-key",
+			Env:       "PAGERDUTY_DEDUP_KEY",
+			Argument:  "dedup-key",
+			Shorthand: "d",
+			Usage:     "The Sensu event label specifying the PagerDuty V2 API deduplication key, use default from PAGERDUTY_DEDUP_KEY env var",
+			Value:     &config.dedupKey,
+			Default:   "",
+		},
+		{
+			Path:      "dedup-key-template",
+			Env:       "PAGERDUTY_DEDUP_KEY_TEMPLATE",
+			Argument:  "dedup-key-template",
+			Shorthand: "k",
+			Usage:     "The PagerDuty V2 API deduplication key template, use default from PAGERDUTY_DEDUP_KEY_TEMPLATE env var",
+			Value:     &config.dedupKeyTemplate,
 			Default:   "",
 		},
 	}
@@ -70,7 +90,13 @@ func manageIncident(event *corev2.Event) error {
 		action = "resolve"
 	}
 
-	dedupKey := fmt.Sprintf("%s-%s", event.Entity.Name, event.Check.Name)
+	dedupKey, err := getPagerDutyDedupKey(event)
+	if err != nil {
+		return err
+	}
+	if len(dedupKey) == 0 {
+		return fmt.Errorf("pagerduty dedup key is empty")
+	}
 
 	pdEvent := pagerduty.V2Event{
 		RoutingKey: config.authToken,
@@ -79,10 +105,32 @@ func manageIncident(event *corev2.Event) error {
 		DedupKey:   dedupKey,
 	}
 
-	_, err := pagerduty.ManageEvent(pdEvent)
+	_, err = pagerduty.ManageEvent(pdEvent)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// getPagerDutyDedupKey returns the PagerDuty deduplication key. The following priority is used to determine the
+// deduplication key.
+// 1. --dedup-key  --  specifies the entity label containing the key
+// 2. --dedup-key-template  --  a template containing the values
+// 3. the default value including the entity and check names
+func getPagerDutyDedupKey(event *corev2.Event) (string, error) {
+	if len(config.dedupKey) > 0 {
+		labelValue := event.Entity.Labels[config.dedupKey]
+		if len(labelValue) > 0 {
+			return labelValue, nil
+		} else {
+			return "", fmt.Errorf("no deduplication key value in label %s", config.dedupKey)
+		}
+	}
+
+	if len(config.dedupKeyTemplate) > 0 {
+		return templates.EvalTemplate("dedupKey", config.dedupKeyTemplate, event)
+	} else {
+		return fmt.Sprintf("%s-%s", event.Entity.Name, event.Check.Name), nil
+	}
 }

@@ -147,15 +147,16 @@
   version = "5.9.0"
 
 [[projects]]
-  digest = "1:8cd72fbcf8f18cf753ca9c40723eaef3356e166437f33d219d977581b7024d14"
+  digest = "1:7897f5d213d0e18a7ce2e217bcf62db98f21ac99b837ca5bc912ccf4f54fd468"
   name = "github.com/sensu/sensu-plugins-go-library"
   packages = [
     "args",
     "sensu",
+    "templates",
   ]
   pruneopts = "UT"
-  revision = "a4d9fcd58e069a1c9e51984b9f4b466accd366c8"
-  version = "0.2.0"
+  revision = "3ea0d273e45847a43108b9025fe0d65be86463a2"
+  version = "0.3.0"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
@@ -286,6 +287,7 @@
     "github.com/PagerDuty/go-pagerduty",
     "github.com/sensu/sensu-go/api/core/v2",
     "github.com/sensu/sensu-plugins-go-library/sensu",
+    "github.com/sensu/sensu-plugins-go-library/templates",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
