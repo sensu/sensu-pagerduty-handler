@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/PagerDuty/go-pagerduty"
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/sensu/sensu-plugins-go-library/sensu"
 	"github.com/sensu/sensu-plugins-go-library/templates"
+	"log"
 )
 
 type HandlerConfig struct {
@@ -13,7 +15,10 @@ type HandlerConfig struct {
 	authToken        string
 	dedupKey         string
 	dedupKeyTemplate string
+	statusMapJson    string
 }
+
+type eventStatusMap map[string][]uint32
 
 var (
 	config = HandlerConfig{
@@ -51,6 +56,15 @@ var (
 			Value:     &config.dedupKeyTemplate,
 			Default:   "",
 		},
+		{
+			Path:      "status-map",
+			Env:       "PAGERDUTY_STATUS_MAP",
+			Argument:  "status-map",
+			Shorthand: "s",
+			Usage:     "The status map used to translate a Sensu check status to a PagerDuty severity",
+			Value:     &config.statusMapJson,
+			Default:   "",
+		},
 	}
 )
 
@@ -67,12 +81,11 @@ func checkArgs(event *corev2.Event) error {
 }
 
 func manageIncident(event *corev2.Event) error {
-	severity := "warning"
-
-	if event.Check.Status < 3 {
-		severities := []string{"info", "warning", "critical"}
-		severity = severities[event.Check.Status]
+	severity, err := getPagerDutySeverity(event, config.statusMapJson)
+	if err != nil {
+		return err
 	}
+	log.Printf("Incident severity: %s", severity)
 
 	summary := fmt.Sprintf("%s/%s : %s", event.Entity.Name, event.Check.Name, event.Check.Output)
 
@@ -133,4 +146,56 @@ func getPagerDutyDedupKey(event *corev2.Event) (string, error) {
 	} else {
 		return fmt.Sprintf("%s-%s", event.Entity.Name, event.Check.Name), nil
 	}
+}
+
+func getPagerDutySeverity(event *corev2.Event, statusMapJson string) (string, error) {
+	var statusMap map[uint32]string
+	var err error
+
+	if len(statusMapJson) > 0 {
+		statusMap, err = parseStatusMap(statusMapJson)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if len(statusMap) > 0 {
+		status := event.Check.Status
+		severity := statusMap[status]
+		if len(severity) > 0 {
+			return severity, nil
+		}
+	}
+
+	// Default to these values is no status map is found
+	severity := "warning"
+	if event.Check.Status < 3 {
+		severities := []string{"info", "warning", "critical"}
+		severity = severities[event.Check.Status]
+	}
+
+	return severity, nil
+}
+
+func parseStatusMap(statusMapJson string) (map[uint32]string, error) {
+	validPagerDutySeverities := map[string]bool{"info": true, "critical": true, "warning": true, "error": true}
+
+	statusMap := eventStatusMap{}
+	err := json.Unmarshal([]byte(statusMapJson), &statusMap)
+	if err != nil {
+		return nil, err
+	}
+
+	// Reverse the map to key it on the status
+	statusToSeverityMap := map[uint32]string{}
+	for severity, statuses := range statusMap {
+		if !validPagerDutySeverities[severity] {
+			return nil, fmt.Errorf("invalid pagerduty severity: %s", severity)
+		}
+		for i := range statuses {
+			statusToSeverityMap[uint32(statuses[i])] = severity
+		}
+	}
+
+	return statusToSeverityMap, nil
 }
