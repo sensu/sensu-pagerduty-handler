@@ -61,7 +61,7 @@ var (
 			Env:       "PAGERDUTY_STATUS_MAP",
 			Argument:  "status-map",
 			Shorthand: "s",
-			Usage:     "The status map used to translate a Sensu check status to a PagerDuty severity",
+			Usage:     "The status map used to translate a Sensu check status to a PagerDuty severity, use default from PAGERDUTY_STATUS_MAP env var",
 			Value:     &config.statusMapJson,
 			Default:   "",
 		},
