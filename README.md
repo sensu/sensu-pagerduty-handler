@@ -34,7 +34,7 @@ Example Sensu Go handler definition:
           "PAGERDUTY_TOKEN=SECRET",
           "PAGERDUTY_DEDUP_KEY=SENSU_EVENT_LABEL",
           "PAGERDUTY_DEDUP_KEY_TEMPLATE={{.Entity.Name}}-{{.Check.Name}}",
-          "PAGERDUTY_STATUS_MAP={"info":[130,10],"error":[4]}"
+          "PAGERDUTY_STATUS_MAP={\"info\":[130,10],\"error\":[4]}"
         ],
         "timeout": 10,
         "filters": [
