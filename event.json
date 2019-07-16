@@ -1,4 +1,5 @@
 {
+  "timestamp": 1561246706000,
   "entity": {
     "entity_class": "agent",
     "system": {
@@ -58,7 +59,9 @@
     "metadata": {
       "name": "webserver01",
       "namespace": "default",
-      "labels": null,
+      "labels": {
+        "someLabel": "one hell of a deduplication key"
+      },
       "annotations": null
     }
   },
@@ -103,7 +106,7 @@
     "issued": 1542667666,
     "output": "example output",
     "state": "failing",
-    "status": 1,
+    "status": 2,
     "total_state_change": 0,
     "last_ok": 0,
     "occurrences": 1,

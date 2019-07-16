@@ -32,6 +32,9 @@ Example Sensu Go handler definition:
         "command": "sensu-pagerduty-handler",
         "env_vars": [
           "PAGERDUTY_TOKEN=SECRET",
+          "PAGERDUTY_DEDUP_KEY=SENSU_EVENT_LABEL",
+          "PAGERDUTY_DEDUP_KEY_TEMPLATE={{.Entity.Name}}-{{.Check.Name}}",
+          "PAGERDUTY_STATUS_MAP={\"info\":[130,10],\"error\":[4]}"
         ],
         "timeout": 10,
         "filters": [
@@ -73,12 +76,57 @@ Usage:
   sensu-pagerduty-handler [flags]
 
 Flags:
-  -h, --help           help for sensu-pagerduty-handler
-  -t, --token string   The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var
-
+  -d, --dedup-key string            The Sensu event label specifying the PagerDuty V2 API deduplication key, use default from PAGERDUTY_DEDUP_KEY env var
+  -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, use default from PAGERDUTY_DEDUP_KEY_TEMPLATE env var
+  -h, --help                        help for sensu-pagerduty-handler
+  -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, use default from PAGERDUTY_STATUS_MAP env var
+  -t, --token string                The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var
 ```
 
 **Note:** Make sure to set the `PAGERDUTY_TOKEN` environment variable for sensitive credentials in production to prevent leaking into system process table. Please remember command arguments can be viewed by unprivileged users using commands such as `ps` or `top`. The `--token` argument is provided as an override primarily for testing purposes. 
+
+### Deduplication Key Priority
+
+The deduplication key is determined using the following priority:
+1. --dedup-key  --  specifies the entity label containing the key
+1. --dedup-key-template  --  a template containing the values
+1. the default value containing the entity and check names
+
+### PagerDuty Severity Mapping
+
+Optionally you can provide mapping information between the Sensu check status and the PagerDuty incident severity.
+To provide the mapping you need to use the `--status-map` command line option or the `PAGERDUTY_STATUS_MAP` environment variable.
+The option accepts a JSON document containing the mapping information. Here's an example of the JSON document:
+
+```json
+{
+    "info": [
+        0,
+        1
+    ],
+    "warning": [
+        2
+    ],
+    "critical:": [
+        3
+    ],
+    "error": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+    ]
+}
+```
+
+The valid [PagerDuty alert severity levels][5] are the following:
+* `info`
+* `warning`
+* `critical`
+* `error`
 
 ## Contributing
 
@@ -88,3 +136,4 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
 [2]: https://www.pagerduty.com/ 
 [3]: https://docs.sensu.io/sensu-go/5.0/reference/handlers/#how-do-sensu-handlers-work
 [4]: https://github.com/sensu/sensu-pagerduty-handler/releases
+[5]: https://support.pagerduty.com/docs/dynamic-notifications#section-eventalert-severity-levels
