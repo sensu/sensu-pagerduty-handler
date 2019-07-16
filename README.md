@@ -32,8 +32,9 @@ Example Sensu Go handler definition:
         "command": "sensu-pagerduty-handler",
         "env_vars": [
           "PAGERDUTY_TOKEN=SECRET",
-          "PAGERDUTY_DEDUP_KEY",
-          "PAGERDUTY_STATUS_MAP"
+          "PAGERDUTY_DEDUP_KEY=SENSU_EVENT_LABEL",
+          "PAGERDUTY_DEDUP_KEY_TEMPLATE={{.Entity.Name}}-{{.Check.Name}}",
+          "PAGERDUTY_STATUS_MAP={"info":[130,10],"error":[4]}"
         ],
         "timeout": 10,
         "filters": [
@@ -121,7 +122,7 @@ The option accepts a JSON document containing the mapping information. Here's an
 }
 ```
 
-The valid PagerDuty severities are the following:
+The valid [PagerDuty alert severity levels][5] are the following:
 * `info`
 * `warning`
 * `critical`
@@ -135,3 +136,4 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
 [2]: https://www.pagerduty.com/ 
 [3]: https://docs.sensu.io/sensu-go/5.0/reference/handlers/#how-do-sensu-handlers-work
 [4]: https://github.com/sensu/sensu-pagerduty-handler/releases
+[5]: https://support.pagerduty.com/docs/dynamic-notifications#section-eventalert-severity-levels
