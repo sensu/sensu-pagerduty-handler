@@ -35,6 +35,7 @@ Example Sensu Go handler definition:
           "PAGERDUTY_DEDUP_KEY=SENSU_EVENT_LABEL",
           "PAGERDUTY_DEDUP_KEY_TEMPLATE={{.Entity.Name}}-{{.Check.Name}}",
           "PAGERDUTY_STATUS_MAP={\"info\":[130,10],\"error\":[4]}"
+          "PAGERDUTY_SUMMARY_FORMAT={ENTITY}/{CHECK} : {OUTPUT}"
         ],
         "timeout": 10,
         "filters": [
@@ -81,6 +82,7 @@ Flags:
   -h, --help                        help for sensu-pagerduty-handler
   -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, use default from PAGERDUTY_STATUS_MAP env var
   -t, --token string                The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var
+  -f, --summary-format string       The format to use when crafting pagerduty incident summary , use default from PAGERDUTY_SUMMARY_FORMAT
 ```
 
 **Note:** Make sure to set the `PAGERDUTY_TOKEN` environment variable for sensitive credentials in production to prevent leaking into system process table. Please remember command arguments can be viewed by unprivileged users using commands such as `ps` or `top`. The `--token` argument is provided as an override primarily for testing purposes. 
@@ -127,6 +129,14 @@ The valid [PagerDuty alert severity levels][5] are the following:
 * `warning`
 * `critical`
 * `error`
+
+### Summary Formatting
+When using a custom formatting for the summary the following tokens can be used:
+* `{ENTITY}` == Entity Name
+* `{CHECK}` == Check Name
+* `{OUTPUT}` == Check Output
+* `{STATUS}` == Numerical Check status (0, 1, 2, ...)
+* `{STATUS_NAME}` == String name of Check status (OK, WARNING, CRITICAL, UNKNOWN)
 
 ## Contributing
 

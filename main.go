@@ -65,6 +65,15 @@ var (
 			Value:     &config.statusMapJson,
 			Default:   "",
 		},
+		{
+			Path:      "summary-format",
+			Env:       "PAGERDUTY_SUMMARY_FORMAT",
+			Argument:  "summary-format",
+			Shorthand: "f",
+			Usage:     "Define how to format summary to send to pagerduty, use default from PAGERDUTY_SUMMARY_FORMAT",
+			Value:     &config.summaryFormat,
+			Default:   "{ENTITY}/{CHECK} : {OUTPUT}",
+		},
 	}
 )
 
@@ -87,7 +96,7 @@ func manageIncident(event *corev2.Event) error {
 	}
 	log.Printf("Incident severity: %s", severity)
 
-	summary := fmt.Sprintf("%s/%s : %s", event.Entity.Name, event.Check.Name, event.Check.Output)
+	summary := formatSummary(event, config.summaryFormat)
 
 	pdPayload := pagerduty.V2Payload{
 		Source:    event.Entity.Name,
@@ -177,6 +186,24 @@ func getPagerDutySeverity(event *corev2.Event, statusMapJson string) (string, er
 	return severity, nil
 }
 
+func formatSummary(event *corev2.Event, summaryFormat string) (string) {
+	statusName := "UNKNOWN"
+	if event.Check.Status == 0 {
+		statusName = "OK"
+	} else if event.Check.Status == 1 {
+		statusName = "WARNING"
+	} else if event.Check.Status == 2 {
+		statusName = "CRITICAL"
+	}
+
+	summary := strings.Replace(summaryFormat, "{ENTITY}", event.Entity.Name, -1)
+	summary = strings.Replace(summary, "{CHECK}", event.Check.Name, -1)
+	summary = strings.Replace(summary, "{OUTPUT}", event.Check.Output, -1)
+	summary = strings.Replace(summary, "{STATUS_NAME}", statusName, -1)
+	summary = strings.Replace(summary, "{STATUS}", string(event.Check.Status), -1)
+	return summary
+}
+
 func parseStatusMap(statusMapJson string) (map[uint32]string, error) {
 	validPagerDutySeverities := map[string]bool{"info": true, "critical": true, "warning": true, "error": true}
 
@@ -199,3 +226,4 @@ func parseStatusMap(statusMapJson string) (map[uint32]string, error) {
 
 	return statusToSeverityMap, nil
 }
+
