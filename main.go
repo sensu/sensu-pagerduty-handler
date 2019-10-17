@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"github.com/PagerDuty/go-pagerduty"
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/sensu/sensu-plugins-go-library/sensu"
@@ -16,6 +17,7 @@ type HandlerConfig struct {
 	dedupKey         string
 	dedupKeyTemplate string
 	statusMapJson    string
+	summaryFormat    string
 }
 
 type eventStatusMap map[string][]uint32
