@@ -150,26 +150,22 @@ The valid [PagerDuty alert severity levels][5] are the following:
 
 ### Example Sensu Go Check Definition to use the Sensu Go Pagerduty Handler:
 
-```json
-{
-    "api_version": "core/v2",
-    "type": "CheckConfig",
-    "metadata": {
-        "namespace": "default",
-        "name": "dummy-app-healthz"
-    },
-    "spec": {
-        "command": "check-http -u http://localhost:8080/healthz",
-        "subscriptions":[
-            "dummy"
-        ],
-        "publish": true,
-        "interval": 10,
-        "handlers": [
-            "pagerduty"
-        ]
-    }
-}
+```yaml
+---
+api_version: core/v2
+type: CheckConfig
+metadata:
+  namespace: default
+  name: dummy-app-healthz
+spec:
+  command: check-http -u http://localhost:8080/healthz
+  subscriptions:
+  - dummy
+  publish: true
+  interval: 10
+  handlers:
+  - pagerduty
+
 ```
 
 ### Deduplication Key Priority
