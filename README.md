@@ -4,6 +4,7 @@
 [![ Build Status](https://travis-ci.org/sensu/sensu-pagerduty-handler.svg?branch=master)](https://travis-ci.org/sensu/sensu-pagerduty-handler)
 
 - [Overview](#overview)
+- [Usage examples](#usage-examples)
 - [Configuration](#configuration)
   - [Environment Variables](#environment-variables)
 - [Setup](#setup)
@@ -15,6 +16,20 @@
 The Sensu Go PagerDuty Handler is a [Sensu Go event handler][3] which manages
 [PagerDuty][2] incidents for alerting operators. With this handler,
 [Sensu][1] can trigger and resolve PagerDuty incidents.
+
+## Usage examples
+
+Help:
+```
+Usage:
+  sensu-pagerduty-handler [flags]
+Flags:
+  -d, --dedup-key string            The Sensu event label specifying the PagerDuty V2 API deduplication key, use default from PAGERDUTY_DEDUP_KEY env var
+  -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, use default from PAGERDUTY_DEDUP_KEY_TEMPLATE env var
+  -h, --help                        help for sensu-pagerduty-handler
+  -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, use default from PAGERDUTY_STATUS_MAP env var
+  -t, --token string                The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var
+```
 
 ## Configuration
 
