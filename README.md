@@ -225,7 +225,6 @@ The valid [PagerDuty alert severity levels][5] are the following:
 * `critical`
 * `error`
 
-## Acknowledgements
 
 [1]: https://github.com/sensu/sensu-go
 [2]: https://www.pagerduty.com/ 
