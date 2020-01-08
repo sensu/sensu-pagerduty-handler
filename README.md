@@ -9,7 +9,6 @@
   - [Environment Variables](#environment-variables)
 - [Setup](#setup)
 - [Examples](#examples)
-- [Acknowledgements](#acknowledgements)
 
 ## Overview
 
