@@ -88,6 +88,10 @@ func manageIncident(event *corev2.Event) error {
 	log.Printf("Incident severity: %s", severity)
 
 	summary := fmt.Sprintf("%s/%s : %s", event.Entity.Name, event.Check.Name, event.Check.Output)
+	// "The maximum permitted length of this property is 1024 characters."
+	if len(summary) > 1024 {
+		summary = summary[:1024]
+	}
 
 	pdPayload := pagerduty.V2Payload{
 		Source:    event.Entity.Name,
