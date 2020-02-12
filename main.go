@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PagerDuty/go-pagerduty"
-	corev2 "github.com/sensu/sensu-go/api/core/v2"
-	"github.com/sensu/sensu-plugins-go-library/sensu"
-	"github.com/sensu/sensu-plugins-go-library/templates"
 	"log"
+
+	"github.com/PagerDuty/go-pagerduty"
+	"github.com/sensu-community/sensu-plugin-sdk/sensu"
+	"github.com/sensu-community/sensu-plugin-sdk/templates"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
 )
 
 type HandlerConfig struct {
