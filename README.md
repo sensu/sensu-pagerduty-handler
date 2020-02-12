@@ -13,7 +13,7 @@ or create an executable script from this source.
 
 From the local path of the sensu-pagerduty-handler repository:
 ```
-go build -o /usr/local/bin/sensu-pagerduty-handler main.go
+go build -o /usr/local/bin/sensu-pagerduty-handler
 ```
 
 ## Configuration
