@@ -1,7 +1,8 @@
-# Sensu Go PagerDuty Handler
-TravisCI: [![TravisCI Build Status](https://travis-ci.org/sensu/sensu-pagerduty-handler.svg?branch=master)](https://travis-ci.org/sensu/sensu-pagerduty-handler)
+# Sensu PagerDuty Handler
 
-The Sensu Go PagerDuty Handler is a [Sensu Event Handler][3] which manages
+[![Bonsai Asset Badge](https://img.shields.io/badge/Sensu%20PagerDuty%20Handler-Download%20Me-brightgreen.svg?colorB=89C967&logo=sensu)](https://bonsai.sensu.io/assets/sensu/sensu-pagerduty-handler)
+
+The Sensu PagerDuty Handler is a [Sensu Event Handler][3] which manages
 [PagerDuty][2] incidents, for alerting operators. With this handler,
 [Sensu][1] can trigger and resolve PagerDuty incidents.
 
@@ -17,7 +18,7 @@ go build -o /usr/local/bin/sensu-pagerduty-handler main.go
 
 ## Configuration
 
-Example Sensu Go handler definition:
+Example Sensu handler definition:
 
 ```json
 {
@@ -44,7 +45,7 @@ Example Sensu Go handler definition:
 }
 ```
 
-Example Sensu Go check definition:
+Example Sensu check definition:
 
 ```json
 {
