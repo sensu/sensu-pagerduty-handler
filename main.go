@@ -93,6 +93,13 @@ func manageIncident(event *corev2.Event) error {
 	if len(summary) > 1024 {
 		summary = summary[:1024]
 	}
+	log.Printf("Incident Summary: %s", summary)
+
+	// "The maximum permitted length of PG event is 512 KB. Let's limit check output to 256KB to prevent triggering a failed send"
+	if len(event.Check.Output) > 256000 {
+		log.Printf("Warning Incident Payload Truncated!")
+		event.Check.Output = "WARNING Truncated:i\n" + event.Check.Output[:256000] + "..."
+	}
 
 	pdPayload := pagerduty.V2Payload{
 		Source:    event.Entity.Name,
