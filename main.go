@@ -78,6 +78,9 @@ func checkArgs(event *corev2.Event) error {
 	if !event.HasCheck() {
 		return fmt.Errorf("event does not contain check")
 	}
+	if len(config.authToken) == 0 {
+		return fmt.Errorf("no auth token provided")
+	}
 	return nil
 }
 
@@ -92,6 +95,13 @@ func manageIncident(event *corev2.Event) error {
 	// "The maximum permitted length of this property is 1024 characters."
 	if len(summary) > 1024 {
 		summary = summary[:1024]
+	}
+	log.Printf("Incident Summary: %s", summary)
+
+	// "The maximum permitted length of PG event is 512 KB. Let's limit check output to 256KB to prevent triggering a failed send"
+	if len(event.Check.Output) > 256000 {
+		log.Printf("Warning Incident Payload Truncated!")
+		event.Check.Output = "WARNING Truncated:i\n" + event.Check.Output[:256000] + "..."
 	}
 
 	pdPayload := pagerduty.V2Payload{
@@ -115,7 +125,6 @@ func manageIncident(event *corev2.Event) error {
 	if len(dedupKey) == 0 {
 		return fmt.Errorf("pagerduty dedup key is empty")
 	}
-
 	pdEvent := pagerduty.V2Event{
 		RoutingKey: config.authToken,
 		Action:     action,
@@ -125,7 +134,25 @@ func manageIncident(event *corev2.Event) error {
 
 	_, err = pagerduty.ManageEvent(pdEvent)
 	if err != nil {
-		return err
+		log.Printf("Warning Event Send failed, sending fallback event\n %s", err.Error())
+		failPayload := pagerduty.V2Payload{
+			Source:    event.Entity.Name,
+			Component: event.Check.Name,
+			Severity:  severity,
+			Summary:   summary,
+			Details:   "Original payload had an error, maybe due to event length. PagerDuty Events must be less than 512KB",
+		}
+		failEvent := pagerduty.V2Event{
+			RoutingKey: config.authToken,
+			Action:     action,
+			Payload:    &failPayload,
+			DedupKey:   dedupKey,
+		}
+
+		_, err = pagerduty.ManageEvent(failEvent)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
