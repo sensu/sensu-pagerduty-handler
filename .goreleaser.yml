@@ -8,10 +8,7 @@ builds:
     binary: bin/{{ .ProjectName }}
     goos:
       - darwin
-      - freebsd
       - linux
-      - netbsd
-      - solaris
       - windows
     goarch:
       - amd64
@@ -22,12 +19,16 @@ builds:
       - 5
       - 6
       - 7
-    ignore:
-      # TODO: add freebsd/arm support to gopsutil
-      - goos: freebsd
-        goarch: arm
-      - goos: freebsd
-        goarch: arm64
+    targets:
+      - darwin_amd64
+      - linux_386
+      - linux_amd64
+      - linux_arm_5
+      - linux_arm_6
+      - linux_arm_7
+      - linux_arm64
+      - windows_386
+      - windows_amd64
 
 checksum:
   # You can change the name of the checksums file.
