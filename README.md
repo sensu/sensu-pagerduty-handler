@@ -44,8 +44,8 @@ Available Commands:
 Flags:
   -t, --token string                The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN
   -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, can be set with PAGERDUTY_DEDUP_KEY_TEMPLATE (default "{{.Entity.Name}}-{{.Check.Name}}")
-  -S, --summary-template string     The template for the alert summary, can be set with PAGERDUTY_SUMMARY_TEMPLATE
-  -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP (default "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}")
+  -S, --summary-template string     The template for the alert summary, can be set with PAGERDUTY_SUMMARY_TEMPLATE (default "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}")
+  -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP
   -h, --help                        help for sensu-pagerduty-handler
 
 Use "sensu-pagerduty-handler [command] --help" for more information about a command.
