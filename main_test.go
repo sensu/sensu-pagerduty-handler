@@ -94,3 +94,12 @@ func Test_GetPagerDutySeverity_StatusMapSeverityNotInMap(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "critical", pagerDutySeverity)
 }
+
+func Test_GetPagerDutyDedupKey(t *testing.T) {
+	event := corev2.FixtureEvent("foo", "bar")
+	config.dedupKeyTemplate = "{{.Entity.Name}}-{{.Check.Name}}"
+
+	dedupKey, err := getPagerDutyDedupKey(event)
+	assert.Nil(t, err)
+	assert.Equal(t, "foo-bar", dedupKey)
+}

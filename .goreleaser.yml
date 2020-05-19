@@ -1,9 +1,15 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod tidy
 builds:
   # List of builds
   - # First Build
     env:
     - CGO_ENABLED=0
     main: main.go
+    ldflags: '-s -w -X github.com/sensu-community/sensu-plugin-sdk/version.version={{.Version}} -X github.com/sensu-community/sensu-plugin-sdk/version.commit={{.Commit}} -X github.com/sensu-community/sensu-plugin-sdk/version.date={{.Date}}'
     # Set the binary output location to bin/ so archive will comply with Sensu Go Asset structure
     binary: bin/{{ .ProjectName }}
     goos:
