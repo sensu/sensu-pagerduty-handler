@@ -14,9 +14,9 @@ import (
 type HandlerConfig struct {
 	sensu.PluginConfig
 	authToken        string
-	dedupKey         string
 	dedupKeyTemplate string
 	statusMapJson    string
+	summaryTemplate  string
 }
 
 type eventStatusMap map[string][]uint32
@@ -26,6 +26,7 @@ var (
 		PluginConfig: sensu.PluginConfig{
 			Name:  "sensu-pagerduty-handler",
 			Short: "The Sensu Go PagerDuty handler for incident management",
+			Keyspace: "sensu.io/plugins/sensu-pagerduty-handler/config",
 		},
 	}
 
@@ -35,17 +36,8 @@ var (
 			Env:       "PAGERDUTY_TOKEN",
 			Argument:  "token",
 			Shorthand: "t",
-			Usage:     "The PagerDuty V2 API authentication token, use default from PAGERDUTY_TOKEN env var",
+			Usage:     "The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN",
 			Value:     &config.authToken,
-			Default:   "",
-		},
-		{
-			Path:      "dedup-key",
-			Env:       "PAGERDUTY_DEDUP_KEY",
-			Argument:  "dedup-key",
-			Shorthand: "d",
-			Usage:     "The Sensu event label specifying the PagerDuty V2 API deduplication key, use default from PAGERDUTY_DEDUP_KEY env var",
-			Value:     &config.dedupKey,
 			Default:   "",
 		},
 		{
@@ -53,18 +45,27 @@ var (
 			Env:       "PAGERDUTY_DEDUP_KEY_TEMPLATE",
 			Argument:  "dedup-key-template",
 			Shorthand: "k",
-			Usage:     "The PagerDuty V2 API deduplication key template, use default from PAGERDUTY_DEDUP_KEY_TEMPLATE env var",
+			Usage:     "The PagerDuty V2 API deduplication key template, can be set with PAGERDUTY_DEDUP_KEY_TEMPLATE",
 			Value:     &config.dedupKeyTemplate,
-			Default:   "",
+			Default:   "{{.Entity.Name}}-{{.Check.Name}}",
 		},
 		{
 			Path:      "status-map",
 			Env:       "PAGERDUTY_STATUS_MAP",
 			Argument:  "status-map",
 			Shorthand: "s",
-			Usage:     "The status map used to translate a Sensu check status to a PagerDuty severity, use default from PAGERDUTY_STATUS_MAP env var",
+			Usage:     "The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP",
 			Value:     &config.statusMapJson,
 			Default:   "",
+		},
+		{
+			Path:      "summary-template",
+			Env:       "PAGERDUTY_SUMMARY_TEMPLATE",
+			Argument:  "summary-template",
+			Shorthand: "S",
+			Usage:     "The template for the alert summary, can be set with PAGERDUTY_SUMMARY_TEMPLATE",
+			Value:     &config.summaryTemplate,
+			Default:   "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}",
 		},
 	}
 )
@@ -91,7 +92,10 @@ func manageIncident(event *corev2.Event) error {
 	}
 	log.Printf("Incident severity: %s", severity)
 
-	summary := fmt.Sprintf("%s/%s : %s", event.Entity.Name, event.Check.Name, event.Check.Output)
+	summary, err := templates.EvalTemplate("summary", config.summaryTemplate, event)
+	if err != nil {
+		return fmt.Errorf("failed to evaluate template %s: %v", config.summaryTemplate, err)
+	}
 	// "The maximum permitted length of this property is 1024 characters."
 	if len(summary) > 1024 {
 		summary = summary[:1024]
@@ -158,26 +162,8 @@ func manageIncident(event *corev2.Event) error {
 	return nil
 }
 
-// getPagerDutyDedupKey returns the PagerDuty deduplication key. The following priority is used to determine the
-// deduplication key.
-// 1. --dedup-key  --  specifies the entity label containing the key
-// 2. --dedup-key-template  --  a template containing the values
-// 3. the default value including the entity and check names
 func getPagerDutyDedupKey(event *corev2.Event) (string, error) {
-	if len(config.dedupKey) > 0 {
-		labelValue := event.Entity.Labels[config.dedupKey]
-		if len(labelValue) > 0 {
-			return labelValue, nil
-		} else {
-			return "", fmt.Errorf("no deduplication key value in label %s", config.dedupKey)
-		}
-	}
-
-	if len(config.dedupKeyTemplate) > 0 {
-		return templates.EvalTemplate("dedupKey", config.dedupKeyTemplate, event)
-	} else {
-		return fmt.Sprintf("%s-%s", event.Entity.Name, event.Check.Name), nil
-	}
+	return templates.EvalTemplate("dedupKey", config.dedupKeyTemplate, event)
 }
 
 func getPagerDutySeverity(event *corev2.Event, statusMapJson string) (string, error) {

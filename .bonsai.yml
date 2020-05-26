@@ -55,4 +55,4 @@ builds:
   sha_filename: "#{repo}_#{version}_sha512-checksums.txt"
   filter:
   -  "entity.system.os == 'windows'"
-  -  "entity.system.arch == 'amd64'"
+  -  "entity.system.arch == '386'"

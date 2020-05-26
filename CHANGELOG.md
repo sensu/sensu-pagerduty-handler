@@ -7,6 +7,19 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+- Added --summaryTemplate to allow for custom summary
+- Version ldflags for goreleaser
+- Plugin Config keyspace to support annotations
+
+### Changed
+- Set default of --dedup-key-template to remove hard-coded default
+- Fixed Bonsai definition for Windows 386
+- Updated README
+
+### Removed
+- Removed --dedup-key now that keyspace is added for annotations to set --dedup-key-template
+
 ## [1.2.0] - 2020-02-12
 
 ### Added
