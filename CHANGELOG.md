@@ -7,6 +7,11 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [2.0.0] - 2020-05-26
+
+### BREAKING CHANGE
+- Removed --dedup-key now that keyspace is added for annotations to set --dedup-key-template
+
 ### Added
 - Added --summaryTemplate to allow for custom summary
 - Version ldflags for goreleaser
@@ -17,10 +22,23 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed Bonsai definition for Windows 386
 - Updated README
 
-### Removed
-- Removed --dedup-key now that keyspace is added for annotations to set --dedup-key-template
+## [1.4.0] - 2020-05-11
 
-## [1.2.0] - 2020-02-12
+### Changed
+- Truncate event details to 256KB to avoid PD's 512KB size limit
+
+## [1.3.2] - 2020-02-12
+
+### Changed
+- Goreleaser fix checksum
+
+## [1.3.1] - 2020-02-12
+
+### Changed
+- Goreleaser workaround
+
+
+## [1.3.0] - 2020-02-12
 
 ### Added
 - Added support for 386 Windows
