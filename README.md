@@ -168,7 +168,7 @@ spec:
 
 All arguments for this handler are tunable on a per entity or check basis based
 on annotations.  The annotations keyspace for this handler is
-`sensu.io/plugins/sensu-opsgenie-handler/config`.
+`sensu.io/plugins/sensu-pagerduty-handler/config`.
 
 ###### Examples
 
