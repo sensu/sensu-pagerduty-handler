@@ -25,8 +25,8 @@ type eventStatusMap map[string][]uint32
 var (
 	config = HandlerConfig{
 		PluginConfig: sensu.PluginConfig{
-			Name:  "sensu-pagerduty-handler",
-			Short: "The Sensu Go PagerDuty handler for incident management",
+			Name:     "sensu-pagerduty-handler",
+			Short:    "The Sensu Go PagerDuty handler for incident management",
 			Keyspace: "sensu.io/plugins/sensu-pagerduty-handler/config",
 		},
 	}
@@ -37,6 +37,7 @@ var (
 			Env:       "PAGERDUTY_TOKEN",
 			Argument:  "token",
 			Shorthand: "t",
+			Secret:    true,
 			Usage:     "The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN",
 			Value:     &config.authToken,
 			Default:   "",
