@@ -7,6 +7,10 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+- Made the details a templated item, with the --details-template flag
+- Updated to the latest plugin SDK (0.8.1)
+
 ## [2.0.1] - 2020-05-28
 
 ### Changed
