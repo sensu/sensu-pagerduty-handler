@@ -17,6 +17,7 @@ type HandlerConfig struct {
 	dedupKeyTemplate string
 	statusMapJson    string
 	summaryTemplate  string
+	detailsTemplate  string
 }
 
 type eventStatusMap map[string][]uint32
@@ -67,6 +68,15 @@ var (
 			Value:     &config.summaryTemplate,
 			Default:   "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}",
 		},
+		{
+			Path:      "details-template",
+			Env:       "PAGERDUTY_DETAILS_TEMPLATE",
+			Argument:  "details-template",
+			Shorthand: "d",
+			Usage:     "The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE",
+			Value:     &config.detailsTemplate,
+			Default:   "{{.}}",
+		},
 	}
 )
 
@@ -96,6 +106,10 @@ func manageIncident(event *corev2.Event) error {
 	if err != nil {
 		return fmt.Errorf("failed to evaluate template %s: %v", config.summaryTemplate, err)
 	}
+	details, err := templates.EvalTemplate("details", config.detailsTemplate, event)
+	if err != nil {
+		return fmt.Errorf("failed to evaluate template %s: %v", config.detailsTemplate, err)
+	}
 	// "The maximum permitted length of this property is 1024 characters."
 	if len(summary) > 1024 {
 		summary = summary[:1024]
@@ -113,7 +127,7 @@ func manageIncident(event *corev2.Event) error {
 		Component: event.Check.Name,
 		Severity:  severity,
 		Summary:   summary,
-		Details:   event,
+		Details:   details,
 	}
 
 	action := "trigger"
