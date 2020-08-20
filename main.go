@@ -74,9 +74,9 @@ var (
 			Env:       "PAGERDUTY_DETAILS_TEMPLATE",
 			Argument:  "details-template",
 			Shorthand: "d",
-			Usage:     "The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE",
+			Usage:     "The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)",
 			Value:     &config.detailsTemplate,
-			Default:   "{{.}}",
+			Default:   "",
 		},
 	}
 )
@@ -97,6 +97,8 @@ func checkArgs(event *corev2.Event) error {
 }
 
 func manageIncident(event *corev2.Event) error {
+	var details interface{}
+
 	severity, err := getPagerDutySeverity(event, config.statusMapJson)
 	if err != nil {
 		return err
@@ -107,9 +109,13 @@ func manageIncident(event *corev2.Event) error {
 	if err != nil {
 		return fmt.Errorf("failed to evaluate template %s: %v", config.summaryTemplate, err)
 	}
-	details, err := templates.EvalTemplate("details", config.detailsTemplate, event)
-	if err != nil {
-		return fmt.Errorf("failed to evaluate template %s: %v", config.detailsTemplate, err)
+	if len(config.detailsTemplate) > 0 { 
+		details, err = templates.EvalTemplate("details", config.detailsTemplate, event)
+		if err != nil {
+			return fmt.Errorf("failed to evaluate template %s: %v", config.detailsTemplate, err)
+		}
+	} else {
+		details = event
 	}
 	// "The maximum permitted length of this property is 1024 characters."
 	if len(summary) > 1024 {
