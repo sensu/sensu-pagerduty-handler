@@ -245,7 +245,7 @@ func getSummary(event *corev2.Event) (string, error) {
 func getDetails(event *corev2.Event) (interface{}, error) {
 	var (
 		details interface{}
-		err error
+		err     error
 	)
 
 	if len(config.detailsTemplate) > 0 {

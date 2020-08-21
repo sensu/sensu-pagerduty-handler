@@ -138,4 +138,3 @@ func Test_GetDetailsTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "foo-bar", details)
 }
-
