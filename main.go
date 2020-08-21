@@ -97,31 +97,21 @@ func checkArgs(event *corev2.Event) error {
 }
 
 func manageIncident(event *corev2.Event) error {
-	var details interface{}
-
 	severity, err := getPagerDutySeverity(event, config.statusMapJson)
 	if err != nil {
 		return err
 	}
 	log.Printf("Incident severity: %s", severity)
 
-	summary, err := templates.EvalTemplate("summary", config.summaryTemplate, event)
+	summary, err := getSummary(event)
 	if err != nil {
-		return fmt.Errorf("failed to evaluate template %s: %v", config.summaryTemplate, err)
+		return err
 	}
-	if len(config.detailsTemplate) > 0 { 
-		details, err = templates.EvalTemplate("details", config.detailsTemplate, event)
-		if err != nil {
-			return fmt.Errorf("failed to evaluate template %s: %v", config.detailsTemplate, err)
-		}
-	} else {
-		details = event
+
+	details, err := getDetails(event)
+	if err != nil {
+		return err
 	}
-	// "The maximum permitted length of this property is 1024 characters."
-	if len(summary) > 1024 {
-		summary = summary[:1024]
-	}
-	log.Printf("Incident Summary: %s", summary)
 
 	// "The maximum permitted length of PG event is 512 KB. Let's limit check output to 256KB to prevent triggering a failed send"
 	if len(event.Check.Output) > 256000 {
@@ -237,4 +227,34 @@ func parseStatusMap(statusMapJson string) (map[uint32]string, error) {
 	}
 
 	return statusToSeverityMap, nil
+}
+
+func getSummary(event *corev2.Event) (string, error) {
+	summary, err := templates.EvalTemplate("summary", config.summaryTemplate, event)
+	if err != nil {
+		return "", fmt.Errorf("failed to evaluate template %s: %v", config.summaryTemplate, err)
+	}
+	// "The maximum permitted length of this property is 1024 characters."
+	if len(summary) > 1024 {
+		summary = summary[:1024]
+	}
+	log.Printf("Incident Summary: %s", summary)
+	return summary, nil
+}
+
+func getDetails(event *corev2.Event) (interface{}, error) {
+	var (
+		details interface{}
+		err error
+	)
+
+	if len(config.detailsTemplate) > 0 {
+		details, err = templates.EvalTemplate("details", config.detailsTemplate, event)
+		if err != nil {
+			return "", fmt.Errorf("failed to evaluate template %s: %v", config.detailsTemplate, err)
+		}
+	} else {
+		details = event
+	}
+	return details, nil
 }
