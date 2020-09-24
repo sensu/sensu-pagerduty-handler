@@ -2,10 +2,10 @@
   <a href="https://bonsai.sensu.io/assets/sensu/sensu-pagerduty-handler">
     <img src="https://img.shields.io/badge/Sensu%20PagerDuty%20Handler-Download%20Me-brightgreen.svg?colorB=89C967&logo=sensu" alt="Bonsai Asset Badge">
   </a>
-  <a href="https://github.com/sensu/sensu-pagerduty-handler/workflows/Go%20Test">
+  <a href="https://github.com/sensu/sensu-pagerduty-handler/actions?query=workflow%3A%22Go+Test%22">
     <img src="https://github.com/sensu/sensu-pagerduty-handler/workflows/Go%20Test/badge.svg" alt="Go Test Actions Workflow">
   </a>
-  <a href="https://github.com/sensu/sensu-pagerduty-handler/workflows/goreleaser">
+  <a href="https://github.com/sensu/sensu-pagerduty-handler/actions?query=workflow%3Agoreleaser">
     <img src="https://github.com/sensu/sensu-pagerduty-handler/workflows/goreleaser/badge.svg" alt="Goreleaser Actions Workflow">
   </a>
 </div>
