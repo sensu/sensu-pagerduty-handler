@@ -1,8 +1,14 @@
-# Sensu PagerDuty Handler
-
-[![Bonsai Asset Badge](https://img.shields.io/badge/Sensu%20PagerDuty%20Handler-Download%20Me-brightgreen.svg?colorB=89C967&logo=sensu)](https://bonsai.sensu.io/assets/sensu/sensu-pagerduty-handler)
-![Go Test](https://github.com/sensu/sensu-pagerduty-handler/workflows/Go%20Test/badge.svg)
-![goreleaser](https://github.com/sensu/sensu-pagerduty-handler/workflows/goreleaser/badge.svg)
+<div class=badges>
+  <a href="https://bonsai.sensu.io/assets/sensu/sensu-pagerduty-handler">
+    <img src="https://img.shields.io/badge/Sensu%20PagerDuty%20Handler-Download%20Me-brightgreen.svg?colorB=89C967&logo=sensu" alt="Bonsai Asset Badge">
+  </a>
+  <a href="https://github.com/sensu/sensu-pagerduty-handler/workflows/Go%20Test">
+    <img src="https://github.com/sensu/sensu-pagerduty-handler/workflows/Go%20Test/badge.svg" alt="Go Test Actions Workflow">
+  </a>
+  <a href="https://github.com/sensu/sensu-pagerduty-handler/workflows/goreleaser">
+    <img src="https://github.com/sensu/sensu-pagerduty-handler/workflows/goreleaser/badge.svg" alt="Goreleaser Actions Workflow">
+  </a>
+</div>
 
 # Sensu PagerDuty Handler
 
