@@ -17,36 +17,36 @@
 - [Quick start](#quick-start)
 - [Usage](#usage)
   - [Help](#help)
-  - [Deduplication Key](#deduplication-key)
-  - [PagerDuty Severity Mapping](#pagerduty-severity-mapping)
-  - [Environment Variables](#environment-variables)
-  - [Argument Annotations](#argument-annotations)
+  - [Environment variables](#environment-variables)
+  - [Argument annotations](#argument-annotations)
   - [Proxy support](#proxy-support)
+  - [Deduplication key](#deduplication-key)
+  - [PagerDuty severity mapping](#pagerduty-severity-mapping)
 - [Configuration](#configuration)
   - [Asset registration](#asset-registration)
+  - [Asset definition](#asset-definition)
   - [Handler definition](#handler-definition)
-- [Installation from source](#installation-from-source)
-- [Contributing](#contributing)
+- [Install from source](#install-from-source)
+- [Contribute](#contribute)
 
 ## Overview
 
-The Sensu PagerDuty Handler is a [Sensu Event Handler][3] which manages
-[PagerDuty][2] incidents, for alerting operators. With this handler,
-[Sensu][1] can trigger and resolve PagerDuty incidents.
+The Sensu PagerDuty Handler is a [Sensu event handler][3] that manages [PagerDuty][2] incidents for alerting operators.
+With this handler, [Sensu][1] can trigger and resolve PagerDuty incidents.
 
-## Quick Start
-The quickest way to get started using this handler plugin, is to install via the monitoring-pipelines [PagerDuty template](https://github.com/sensu-community/monitoring-pipelines/blob/master/incident-management/pagerduty.yaml)
-The template provides helpful comments concerning supported options, and includes Sensu resource definitions for the handler and the versioned asset you will need.
-You'll want to edit the template to match your configuration before installing with `sensuctl create`.
+## Quick start
 
-Please note that the monitoring-pipeline abd monitoring-checks templates make use of specially defined handler sets by default.
-For me information on how the templates work, take a look at the [monitoring pipelines readme](https://github.com/sensu-community/monitoring-pipelines/blob/master/README.md)
+We recommend installing the Sensu PagerDuty Handler plugin via the [monitoring-pipelines PagerDuty template](https://github.com/sensu-community/monitoring-pipelines/blob/master/incident-management/pagerduty.yaml).
+The template includes Sensu resource definitions for the handler, the versioned asset you will need, and information about supported options.
+Make sure to edit the template to match your configuration before you install it with `sensuctl create`.
 
-
+**NOTE**: The monitoring-pipelines and monitoring-checks templates use specially defined handler sets by default.
+For more information about how these templates work, read the [monitoring pipelines readme](https://github.com/sensu-community/monitoring-pipelines/blob/master/README.md).
 
 ## Usage
 
 ### Help
+
 ```
 The Sensu Go PagerDuty handler for incident management
 
@@ -69,25 +69,23 @@ Use "sensu-pagerduty-handler [command] --help" for more information about a comm
 
 ```
 
-#### Environment Variables
+### Environment variables
 
-Most arguments for this handler are available to be set via environment
-variables.  However, any arguments specified directly on the command line
-override the corresponding environment variable.
+You can set most arguments for the Sensu PagerDuty Handler via environment variables.
+However, any arguments specified directly on the command line will override the corresponding environment variable.
 
-|Argument            |Environment Variable        |
-|--------------------|----------------------------|
-|--token             |PAGERDUTY_TOKEN             |
-|--summary-template  |PAGERDUTY_SUMMARY_TEMPLATE  |
-|--dedup-key-template|PAGERDUTY_DEDUP_KEY_TEMPLATE|
-|--status-map        |PAGERDUTY_STATUS_MAP        |
+|Argument            |Environment Variable          |
+|--------------------|------------------------------|
+|--token             |`PAGERDUTY_TOKEN`             |
+|--dedup-key-template|`PAGERDUTY_DEDUP_KEY_TEMPLATE`|
+|--summary-template  |`PAGERDUTY_SUMMARY_TEMPLATE`  |
+|--status-map        |`PAGERDUTY_STATUS_MAP`        |
 
-**Security Note:** Care should be taken to not expose the auth token for this
-handler by specifying it on the command line or by directly setting the
-environment variable in the handler definition.  It is suggested to make use of
-[secrets management][8] to surface it as an environment variable.  The handler
-definition above references it as a secret.  Below is an example secrets
-definition that make use of the built-in [env secrets provider][9].
+**IMPORTANT**: Take care to avoid exposing the handler authentication token by specifying it on the command line or directly setting the `PAGERDUTY_TOKEN`
+environment variable in the handler definition.
+Consider using [secrets management][8] to surface the token as an environment variable as shown in the [handler definition][10].
+
+To use Sensu's built-in [env secrets provider][9] to set the `PAGERDUTY_TOKEN` environment variable:
 
 ```yml
 ---
@@ -100,16 +98,14 @@ spec:
   id: PAGERDUTY_TOKEN
 ```
 
-#### Argument Annotations
+### Argument annotations
 
-All arguments for this handler are tunable on a per entity or check basis based
-on annotations.  The annotations keyspace for this handler is
-`sensu.io/plugins/sensu-pagerduty-handler/config`.
+You can tune all arguments for the Sensu PagerDuty Handler on a per entity or per check basis based on annotations.
+The annotations keyspace for the handler is `sensu.io/plugins/sensu-pagerduty-handler/config`.
 
-###### Examples
+#### Annotation example
 
-To change the token argument for a particular check, for that checks's metadata
-add the following:
+To change the token argument for a particular check, add this annotation to the checks's metadata:
 
 ```yml
 type: CheckConfig
@@ -120,27 +116,32 @@ metadata:
 [...]
 ```
 
-#### Proxy Support
+### Proxy support
 
-This handler supports the use of the environment variables HTTP_PROXY,
-HTTPS_PROXY, and NO_PROXY (or the lowercase versions thereof). HTTPS_PROXY takes
-precedence over HTTP_PROXY for https requests.  The environment values may be
-either a complete URL or a "host[:port]", in which case the "http" scheme is
-assumed.
+The Sensu PagerDuty Handler supports the environment variables `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` (or the lowercase versions thereof).
+`HTTPS_PROXY` takes precedence over `HTTP_PROXY` for HTTPS requests.
 
-### Deduplication Key
+The environment values may be a complete URL or a "host[:port]".
+If you use a "host[:port]", the "http" scheme is assumed.
 
-The deduplication key is determined via the `--dedup-key-template` argument.  It
-is a Golang template containing the event values and defaults to
-`{{.Entity.Name}}-{{.Check.Name}}`.
+### Deduplication key
 
-### PagerDuty Severity Mapping
+The deduplication key is determined via the `--dedup-key-template` argument.
+The key is a Golang template that contains the event values and defaults to `{{.Entity.Name}}-{{.Check.Name}}`.
 
-Optionally you can provide mapping information between the Sensu check status
-and the PagerDuty incident severity. To provide the mapping you need to use the
-`--status-map` command line option or the `PAGERDUTY_STATUS_MAP` environment
-variable.  The option accepts a JSON document containing the mapping
-information. Here's an example of the JSON document:
+### PagerDuty severity mapping
+
+If you wish, you can provide mapping information between the Sensu check status and the PagerDuty incident severity.
+To do this, use the `--status-map` command line option or the `PAGERDUTY_STATUS_MAP` environment variable.
+
+The valid [PagerDuty alert severity levels][5] are:
+* `info`
+* `warning`
+* `critical`
+* `error`
+
+Use a JSON document to provide the mapping information.
+For example:
 
 ```json
 {
@@ -166,30 +167,27 @@ information. Here's an example of the JSON document:
 }
 ```
 
-The valid [PagerDuty alert severity levels][5] are the following:
-* `info`
-* `warning`
-* `critical`
-* `error`
-
 ## Configuration
-Note: If you are using the monitoring-plugins template, the template provides the asset and handler resource definitions. Please read the inline comments in the template, for more information on template configuration options.
+
+**NOTE**: If you use the [monitoring-pipelines PagerDuty template](https://github.com/sensu-community/monitoring-pipelines/blob/master/incident-management/pagerduty.yaml), the template provides the asset and handler resource definitions you need.
+Read the inline comments in the template for information about template configuration options.
 
 ### Asset registration
 
-[Sensu Assets][6] are the best way to make use of this plugin. If you're not
-using an asset, please consider doing so! If you're using sensuctl 5.13 with
-Sensu Backend 5.13 or later, you can use the following command to add the asset:
+[Sensu assets][6] are the best way to install and use this plugin.
+If you're not using an asset, please consider doing so!
+
+If you're using sensuctl 5.13 with Sensu backend 5.13 or later, you can use the following command to add the asset:
 
 ```
 sensuctl asset add sensu/sensu-pagerduty-handler
 ```
 
-If you're using an earlier version of sensuctl, you can find the asset on the
-[Bonsai Asset Index][7].
+If you're using an earlier version of sensuctl, you can find the asset on [Bonsai, the Sensu asset index][7].
 
 ### Asset definition
-Below is an example of a manually created asset definition. You can use this definition with `sensu create` to register a version of this asset without using the bonsai integration.
+
+This is an example of a manually created asset definition:
 
 ```yml
 ---
@@ -205,8 +203,11 @@ spec:
   - entity.system.arch == 'amd64'
 ```
 
+You can use this definition with `sensu create` to register a version of this asset without using the Bonsai integration.
 
 ### Handler definition
+
+This is an example of a manually created handler definition:
 
 ```yml
 ---
@@ -228,27 +229,28 @@ spec:
     secret: pagerduty_authtoken
 ```
 
+## Install from source
 
-## Installation from source
+Download the latest version of the sensu-pagerduty-handler from [releases][4] or create an executable script from this source.
 
-Download the latest version of the sensu-pagerduty-handler from [releases][4],
-or create an executable script from this source.
+From the local path of the sensu-pagerduty-handler repository, run:
 
-From the local path of the sensu-pagerduty-handler repository:
 ```
 go build -o /usr/local/bin/sensu-pagerduty-handler
 ```
 
-## Contributing
+## Contribute
 
-See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
+See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md to contribute to this project.
+
 
 [1]: https://github.com/sensu/sensu-go
 [2]: https://www.pagerduty.com/
-[3]: https://docs.sensu.io/sensu-go/5.0/reference/handlers/#how-do-sensu-handlers-work
+[3]: https://docs.sensu.io/sensu-go/5.0/reference/handlers/
 [4]: https://github.com/sensu/sensu-pagerduty-handler/releases
 [5]: https://support.pagerduty.com/docs/dynamic-notifications#section-eventalert-severity-levels
-[6]: https://docs.sensu.io/sensu-go/latest/reference/assets/
-[7]: https://bonsai.sensu.io/sensu/sensu-pagerduty-handler
-[8]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/
-[9]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/#use-env-for-secrets-management
+[6]: https://docs.sensu.io/sensu-go/latest/operations/deploy-sensu/assets/
+[7]: https://bonsai.sensu.io/assets/sensu/sensu-pagerduty-handler
+[8]: https://docs.sensu.io/sensu-go/latest/operations/manage-secrets/secrets-management/
+[9]: https://docs.sensu.io/sensu-go/latest/operations/manage-secrets/secrets-management/#use-env-for-secrets-management
+[10]: #handler-definition
