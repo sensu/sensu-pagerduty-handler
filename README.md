@@ -18,6 +18,7 @@
 - [Usage](#usage)
   - [Help](#help)
   - [Environment variables](#environment-variables)
+  - [Event-based templating](#event-based-templating)
   - [Argument annotations](#argument-annotations)
   - [Proxy support](#proxy-support)
   - [Deduplication key](#deduplication-key)
@@ -37,8 +38,8 @@ With this handler, [Sensu][1] can trigger and resolve PagerDuty incidents.
 ## Quick start
 
 We recommend installing the Sensu PagerDuty Handler plugin via the [monitoring-pipelines PagerDuty template](https://github.com/sensu-community/monitoring-pipelines/blob/master/incident-management/pagerduty.yaml).
-The template includes Sensu resource definitions for the handler, the versioned asset you will need, and information about supported options.
-Make sure to edit the template to match your configuration before you install it with `sensuctl create`.
+The template includes additional template-specific instructions, Sensu resource definitions for the handler, the versioned asset you will need, and information about supported options.
+Make sure to read the template's inline comments for template-specific instructions and edit the template to match your configuration before you install it with `sensuctl create`.
 
 **NOTE**: The monitoring-pipelines and monitoring-checks templates use specially defined handler sets by default.
 For more information about how these templates work, read the [monitoring pipelines readme](https://github.com/sensu-community/monitoring-pipelines/blob/master/README.md).
@@ -97,6 +98,11 @@ spec:
   provider: env
   id: PAGERDUTY_TOKEN
 ```
+
+### Event-based templating
+
+The Sensu Pagerduty Handler supports templating based on event data via the `--dedup-key-template` and `--summary-template` arguments.
+Read [Create handler templates](https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-process/handler-templates/) for more information about event-based templating.
 
 ### Argument annotations
 
@@ -169,7 +175,7 @@ For example:
 
 ## Configuration
 
-**NOTE**: If you use the [monitoring-pipelines PagerDuty template](https://github.com/sensu-community/monitoring-pipelines/blob/master/incident-management/pagerduty.yaml), the template provides the asset and handler resource definitions you need.
+**NOTE**: If you use the [monitoring-pipelines PagerDuty template][11], the template provides the asset and handler resource definitions you need.
 Read the inline comments in the template for information about template configuration options.
 
 ### Asset registration
@@ -231,7 +237,7 @@ spec:
 
 ## Install from source
 
-Download the latest version of the sensu-pagerduty-handler from [releases][4] or create an executable script from this source.
+Download the latest version of the sensu-pagerduty-handler from [releases][4] or create an executable from this source.
 
 From the local path of the sensu-pagerduty-handler repository, run:
 
@@ -254,3 +260,4 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md to contribute 
 [8]: https://docs.sensu.io/sensu-go/latest/operations/manage-secrets/secrets-management/
 [9]: https://docs.sensu.io/sensu-go/latest/operations/manage-secrets/secrets-management/#use-env-for-secrets-management
 [10]: #handler-definition
+[11]: https://github.com/sensu-community/monitoring-pipelines/blob/master/incident-management/pagerduty.yaml
