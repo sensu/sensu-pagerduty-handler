@@ -170,9 +170,27 @@ All arguments for this handler are tunable on a per entity or check basis based
 on annotations.  The annotations keyspace for this handler is
 `sensu.io/plugins/sensu-pagerduty-handler/config`.
 
+**NOTE**: Due to [check token substituion][10], supplying a template value such
+as for `details-template` as a check annotation requires that you place the
+desired template as a [golang string literal][11] (enlcosed in backticks)
+within another template definition.  This does not apply to entity annotations.
+
 ###### Examples
 
-To change the token argument for a particular check, for that checks's metadata
+To change the `--details-template` argument for a particular check, and taking
+into account the note above regarding templates, for that check's metadata add
+the following:
+
+```yml
+type: CheckConfig
+api_version: core/v2
+metadata:
+  annotations:
+    sensu.io/plugins/sensu-pagerduty-handler/config/details-template: "{{`{{.Check.Output}}`}}"
+[...]
+```
+
+To change the `--token` argument for a particular check, for that checks's metadata
 add the following:
 
 ```yml
@@ -215,3 +233,5 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
 [7]: https://bonsai.sensu.io/sensu/sensu-pagerduty-handler
 [8]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/
 [9]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/#use-env-for-secrets-management
+[10]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-schedule/checks/#check-token-substitution
+[11]: https://golang.org/ref/spec#String_literals
