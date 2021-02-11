@@ -1,5 +1,3 @@
-# Sensu PagerDuty Handler
-
 [![Bonsai Asset Badge](https://img.shields.io/badge/Sensu%20PagerDuty%20Handler-Download%20Me-brightgreen.svg?colorB=89C967&logo=sensu)](https://bonsai.sensu.io/assets/sensu/sensu-pagerduty-handler)
 ![Go Test](https://github.com/sensu/sensu-pagerduty-handler/workflows/Go%20Test/badge.svg)
 ![goreleaser](https://github.com/sensu/sensu-pagerduty-handler/workflows/goreleaser/badge.svg)
@@ -9,14 +7,15 @@
 ## Table of Contents
 - [Overview](#overview)
 - [Usage examples](#usage-examples)
-  - [Help](#help)
-  - [Deduplication Key](#deduplication-key)
-  - [PagerDuty Severity Mapping](#pagerduty-severity-mapping)
+  - [Help output](#help-output)
+  - [Deduplication key](#deduplication-key)
+  - [PagerDuty severity mapping](#pagerduty-severity-mapping)
 - [Configuration](#configuration)
   - [Asset registration](#asset-registration)
   - [Handler definition](#handler-definition)
-  - [Environment Variables](#environment-variables)
-  - [Argument Annotations](#argument-annotations)
+  - [Environment variables](#environment-variables)
+  - [Templates](#templates)
+  - [Argument annotations](#argument-annotations)
   - [Proxy support](#proxy-support)
 - [Installation from source](#installation-from-source)
 - [Contributing](#contributing)
@@ -27,9 +26,9 @@ The Sensu PagerDuty Handler is a [Sensu Event Handler][3] which manages
 [PagerDuty][2] incidents, for alerting operators. With this handler,
 [Sensu][1] can trigger and resolve PagerDuty incidents.
 
-## Usage Examples
+## Usage examples
 
-### Help
+### Help output
 ```
 The Sensu Go PagerDuty handler for incident management
 
@@ -45,6 +44,7 @@ Flags:
   -t, --token string                The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN
   -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, can be set with PAGERDUTY_DEDUP_KEY_TEMPLATE (default "{{.Entity.Name}}-{{.Check.Name}}")
   -S, --summary-template string     The template for the alert summary, can be set with PAGERDUTY_SUMMARY_TEMPLATE (default "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}")
+  -d, --details-template string     The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)
   -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP
   -h, --help                        help for sensu-pagerduty-handler
 
@@ -52,13 +52,13 @@ Use "sensu-pagerduty-handler [command] --help" for more information about a comm
 
 ```
 
-### Deduplication Key
+### Deduplication key
 
 The deduplication key is determined via the `--dedup-key-template` argument.  It
 is a Golang template containing the event values and defaults to
 `{{.Entity.Name}}-{{.Check.Name}}`.
 
-### PagerDuty Severity Mapping
+### PagerDuty severity mapping
 
 Optionally you can provide mapping information between the Sensu check status
 and the PagerDuty incident severity. To provide the mapping you need to use the
@@ -97,8 +97,7 @@ The valid [PagerDuty alert severity levels][5] are the following:
 * `error`
 
 ## Configuration
-### Sensu Go
-#### Asset registration
+### Asset registration
 
 [Sensu Assets][6] are the best way to make use of this plugin. If you're not
 using an asset, please consider doing so! If you're using sensuctl 5.13 with
@@ -111,7 +110,7 @@ sensuctl asset add sensu/sensu-pagerduty-handler
 If you're using an earlier version of sensuctl, you can find the asset on the
 [Bonsai Asset Index][7].
 
-#### Handler definition
+### Handler definition
 
 ```yml
 ---
@@ -122,7 +121,12 @@ metadata:
   namespace: default
 spec:
   type: pipe
-  command: sensu-pagerduty-handler
+  command: >-
+    sensu-pagerduty-handler
+    --dedup-key-template "{{.Entity.Namespace}}-{{.Entity.Name}}-{{.Check.Name}}"
+    --status-map "{\"info\":[0],\"warning\": [1],\"critical\": [2],\"error\": [3,127]}"
+    --summary-template "[{{.Entity.Namespace}}] {{.Entity.Name}}/{{.Check.Name}}: {{.Check.State}}"
+    --details-template "{{.Check.Output}}\n\n{{.Check}}"
   timeout: 10
   runtime_assets:
   - sensu/sensu-pagerduty-handler
@@ -133,7 +137,7 @@ spec:
     secret: pagerduty_authtoken
 ```
 
-#### Environment Variables
+### Environment variables
 
 Most arguments for this handler are available to be set via environment
 variables.  However, any arguments specified directly on the command line
@@ -164,7 +168,13 @@ spec:
   id: PAGERDUTY_TOKEN
 ```
 
-#### Argument Annotations
+### Templates
+
+This handler provides options for using templates to populate the values
+provided by the event in the message sent via SNS. More information on
+template syntax and format can be found in [the documentation][12].
+
+### Argument annotations
 
 All arguments for this handler are tunable on a per entity or check basis based
 on annotations.  The annotations keyspace for this handler is
@@ -175,7 +185,7 @@ as for `details-template` as a check annotation requires that you place the
 desired template as a [golang string literal][11] (enlcosed in backticks)
 within another template definition.  This does not apply to entity annotations.
 
-###### Examples
+##### Examples
 
 To change the `--details-template` argument for a particular check, and taking
 into account the note above regarding templates, for that check's metadata add
@@ -202,7 +212,7 @@ metadata:
 [...]
 ```
 
-#### Proxy Support
+### Proxy support
 
 This handler supports the use of the environment variables HTTP_PROXY,
 HTTPS_PROXY, and NO_PROXY (or the lowercase versions thereof). HTTPS_PROXY takes
@@ -213,7 +223,7 @@ assumed.
 ## Installation from source
 
 Download the latest version of the sensu-pagerduty-handler from [releases][4],
-or create an executable script from this source.
+or create an executable from this source.
 
 From the local path of the sensu-pagerduty-handler repository:
 ```
@@ -235,3 +245,4 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
 [9]: https://docs.sensu.io/sensu-go/latest/guides/secrets-management/#use-env-for-secrets-management
 [10]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-schedule/checks/#check-token-substitution
 [11]: https://golang.org/ref/spec#String_literals
+[12]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-process/handler-templates/
