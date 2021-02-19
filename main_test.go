@@ -127,6 +127,16 @@ func Test_PagerIllegalTeamToken(t *testing.T) {
 	assert.Equal(t, "token_value", teamToken)
 }
 
+func Test_PagerTeamNoSuffix(t *testing.T) {
+	config.teamName = "test-team"
+	config.teamSuffix = ""
+	os.Setenv("test_team", "token_value")
+	teamToken, err := getTeamToken()
+	assert.Nil(t, err)
+	assert.NotNil(t, teamToken)
+	assert.Equal(t, "token_value", teamToken)
+}
+
 func Test_GetSummary(t *testing.T) {
 	event := corev2.FixtureEvent("foo", "bar")
 	config.summaryTemplate = "{{.Entity.Name}}-{{.Check.Name}}"
