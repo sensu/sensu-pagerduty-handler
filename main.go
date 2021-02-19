@@ -20,7 +20,7 @@ type HandlerConfig struct {
 	statusMapJson    string
 	summaryTemplate  string
 	teamName         string
-	teamPrefix       string
+	teamSuffix       string
 	detailsTemplate  string
 }
 
@@ -47,22 +47,20 @@ var (
 			Default:   "",
 		},
 		{
-			Path:      "pager-team",
-			Env:       "PAGERDUTY_TEAM",
-			Argument:  "team",
-			Shorthand: "T",
-			Usage:     "String for envvar name(alphanumeric and underscores) holding PagerDuty V2 API authentication token, can be set with PAGERDUTY_TEAM",
-			Value:     &config.teamName,
-			Default:   "",
+			Path:     "pager-team",
+			Env:      "PAGERDUTY_TEAM",
+			Argument: "pager-team",
+			Usage:    "String for envvar name(alphanumeric and underscores) holding PagerDuty V2 API authentication token, can be set with PAGERDUTY_TEAM",
+			Value:    &config.teamName,
+			Default:  "",
 		},
 		{
-			Path:      "pager-team-suffix",
-			Env:       "PAGERDUTY_TEAM_PREFIX",
-			Argument:  "prefix",
-			Shorthand: "P",
-			Usage:     "Pager team prefix string to append if missing from pager-team name, can be set with PAGERDUTY_TEAM_PREFIX",
-			Value:     &config.teamPrefix,
-			Default:   "pagerduty_token_",
+			Path:     "pager-team-suffix",
+			Env:      "PAGERDUTY_TEAM_SUFFIX",
+			Argument: "pager-team-suffix",
+			Usage:    "Pager team prefix string to append if missing from pager-team name, can be set with PAGERDUTY_TEAM_PREFIX",
+			Value:    &config.teamSuffix,
+			Default:  "_pagerduty_token",
 		},
 		{
 			Path:      "dedup-key-template",
@@ -115,14 +113,14 @@ func getTeamToken() (string, error) {
 		return "", err
 	}
 	teamEnvVar := reg.ReplaceAllString(config.teamName, "_")
-	//add prefix if needed
-	if len(config.teamPrefix) > 0 {
-		matched, err := regexp.MatchString("^"+config.teamPrefix, config.teamName)
+	//add suffix if needed
+	if len(config.teamSuffix) > 0 {
+		matched, err := regexp.MatchString(config.teamSuffix+"$", config.teamName)
 		if err != nil {
 			return "", err
 		}
 		if !matched {
-			teamEnvVar = config.teamPrefix + teamEnvVar
+			teamEnvVar = teamEnvVar + config.teamSuffix
 		}
 	}
 	if len(teamEnvVar) == 0 {

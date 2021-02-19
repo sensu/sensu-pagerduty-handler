@@ -110,8 +110,8 @@ func Test_GetPagerDutyDedupKey(t *testing.T) {
 func Test_PagerTeamToken(t *testing.T) {
 	//event := corev2.FixtureEvent("foo", "bar")
 	config.teamName = "test_team"
-	config.teamPrefix = "test_prefix_"
-	os.Setenv("test_prefix_test_team", "token_value")
+	config.teamSuffix = "_test_suffix"
+	os.Setenv("test_team_test_suffix", "token_value")
 	teamToken, err := getTeamToken()
 	assert.Nil(t, err)
 	assert.NotNil(t, teamToken)
