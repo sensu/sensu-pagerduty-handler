@@ -41,15 +41,16 @@ Available Commands:
   version     Print the version number of this plugin
 
 Flags:
-  -t, --token string                The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN
   -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, can be set with PAGERDUTY_DEDUP_KEY_TEMPLATE (default "{{.Entity.Name}}-{{.Check.Name}}")
-  -S, --summary-template string     The template for the alert summary, can be set with PAGERDUTY_SUMMARY_TEMPLATE (default "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}")
   -d, --details-template string     The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)
-  -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP
   -h, --help                        help for sensu-pagerduty-handler
+      --pager-team string           String for envvar name(alphanumeric and underscores) holding PagerDuty V2 API authentication token, can be set with PAGERDUTY_TEAM
+      --pager-team-suffix string    Pager team prefix string to append if missing from pager-team name, can be set with PAGERDUTY_TEAM_PREFIX (default "_pagerduty_token")
+  -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP
+  -S, --summary-template string     The template for the alert summary, can be set with PAGERDUTY_SUMMARY_TEMPLATE (default "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}")
+  -t, --token string                The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN
 
 Use "sensu-pagerduty-handler [command] --help" for more information about a command.
-
 ```
 
 ### Deduplication key
@@ -95,6 +96,7 @@ The valid [PagerDuty alert severity levels][5] are the following:
 * `warning`
 * `critical`
 * `error`
+
 
 ## Configuration
 ### Asset registration
@@ -212,6 +214,63 @@ metadata:
 [...]
 ```
 
+### Pager Teams
+
+Instead of specifying the authentication token directly in the check or agent annotations, you can instead reference a pager team name, which will then be used to lookup the corresponding token from the handler environment. 
+Corresponding pager team token environment variables can be populated in the handler environment in 3 different ways
+1. Explicitly set in the handler definition
+2. Kept as Sensu [secrets][13] and referenced in the handler definition
+3. Defined in the [backend service environment file][14], read in at backend service start.
+
+Pager team names will be automatically suffixed with configured team_name_suffix (default: `_pagerduty_suffix`)
+Note: Team name strings should be alphameric and underscores only. Groups of illegal characters will be mapped into a single underscore character. Ex: `example-_-team` will be converted to `example_team`
+
+If the team token lookup fails, the explicitly provided token will be used as a fallback if available.
+
+##### Example of Check Using Pager Team and Handler Environment Variables:
+
+First set the pager-team annotation in the check or agent resource.
+###### Check Snippet:
+```
+---
+type: CheckConfig 
+api_version: core/v2 
+metadata: 
+  name: example-check 
+  annotations: 
+    sensu.io/plugins/sensu-pagerduty-handler/config/pager-team: team_1
+```
+
+And define the corresponding evironment variable for the pager team's token in the handler's environment.
+###### Handler Snippet:
+```
+---
+type: Handler
+api_version: core/v2
+metadata:
+  name: pagerduty
+  namespace: default
+spec:
+  type: pipe
+  command: >-
+    sensu-pagerduty-handler
+    --dedup-key-template "{{.Entity.Namespace}}-{{.Entity.Name}}-{{.Check.Name}}"
+    --status-map "{\"info\":[0],\"warning\": [1],\"critical\": [2],\"error\": [3,127]}"
+    --summary-template "[{{.Entity.Namespace}}] {{.Entity.Name}}/{{.Check.Name}}: {{.Check.State}}"
+    --details-template "{{.Check.Output}}\n\n{{.Check}}"
+  timeout: 10
+  runtime_assets:
+  - sensu/sensu-pagerduty-handler
+  filters:
+  - is_incident
+  secrets:
+  - name: PAGERDUTY_TOKEN
+    secret: pagerduty_authtoken
+  env_vars: 
+  - team_1_pagerduty_token="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  
+```
+
 ### Proxy support
 
 This handler supports the use of the environment variables HTTP_PROXY,
@@ -246,3 +305,5 @@ See https://github.com/sensu/sensu-go/blob/master/CONTRIBUTING.md
 [10]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-schedule/checks/#check-token-substitution
 [11]: https://golang.org/ref/spec#String_literals
 [12]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-process/handler-templates/
+[13]: https://docs.sensu.io/sensu-go/latest/operations/manage-secrets/secrets/
+[14]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-schedule/backend/#use-environment-variables-with-the-sensu-backend
