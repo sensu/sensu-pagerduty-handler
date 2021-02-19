@@ -112,15 +112,17 @@ func getTeamToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	//sanitize
 	teamEnvVar := reg.ReplaceAllString(config.teamName, "_")
+	teamEnvVarSuffix := reg.ReplaceAllString(config.teamSuffix, "_")
 	//add suffix if needed
 	if len(config.teamSuffix) > 0 {
-		matched, err := regexp.MatchString(config.teamSuffix+"$", config.teamName)
+		matched, err := regexp.MatchString(config.teamSuffix+"$", teamEnvVar)
 		if err != nil {
 			return "", err
 		}
 		if !matched {
-			teamEnvVar = teamEnvVar + config.teamSuffix
+			teamEnvVar = teamEnvVar + teamEnvVarSuffix
 		}
 	}
 	if len(teamEnvVar) == 0 {
