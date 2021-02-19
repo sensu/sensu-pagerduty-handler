@@ -9,6 +9,12 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - Updated README for specifying templates in check annotations
+- Q1 '21 handler maintenance:
+  - Updated modules (go get -u && go mod tidy)
+  - Updated GitHub Actions: Added Lint action
+  - Updated build to Go 1.14
+  - Output log message from sending event to PagerDuty
+  - README updates
 
 ## 2.1.0 - 2020-10-29
 

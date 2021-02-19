@@ -203,7 +203,7 @@ func manageIncident(event *corev2.Event) error {
 		DedupKey:   dedupKey,
 	}
 
-	_, err = pagerduty.ManageEvent(pdEvent)
+	eventResponse, err := pagerduty.ManageEvent(pdEvent)
 	if err != nil {
 		log.Printf("Warning Event Send failed, sending fallback event\n %s", err.Error())
 		failPayload := pagerduty.V2Payload{
@@ -220,12 +220,16 @@ func manageIncident(event *corev2.Event) error {
 			DedupKey:   dedupKey,
 		}
 
-		_, err = pagerduty.ManageEvent(failEvent)
+		failResponse, err := pagerduty.ManageEvent(failEvent)
 		if err != nil {
 			return err
 		}
+		// FUTURE send to AH
+		log.Printf("Failback event (%s) submitted to PagerDuty, Status: %s, Dedup Key: %s, Message: %s", action, failResponse.Status, failResponse.DedupKey, failResponse.Message)
 	}
 
+	// FUTURE send to AH
+	log.Printf("Event (%s) submitted to PagerDuty, Status: %s, Dedup Key: %s, Message: %s", action, eventResponse.Status, eventResponse.DedupKey, eventResponse.Message)
 	return nil
 }
 
