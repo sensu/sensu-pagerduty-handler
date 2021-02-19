@@ -7,6 +7,16 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+- Updated README for specifying templates in check annotations
+
+## 2.1.0 - 2020-10-29
+
+### Changed
+- Made the details a templated item, with the --details-template flag
+- Updated to the latest plugin SDK (0.10.1)
+- Made summary template its own function to facilitate testing
+
 ## [2.0.1] - 2020-05-28
 
 ### Changed

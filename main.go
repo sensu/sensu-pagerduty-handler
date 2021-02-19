@@ -21,6 +21,7 @@ type HandlerConfig struct {
 	summaryTemplate  string
 	teamName         string
 	teamPrefix       string
+	detailsTemplate  string
 }
 
 type eventStatusMap map[string][]uint32
@@ -40,10 +41,10 @@ var (
 			Env:       "PAGERDUTY_TOKEN",
 			Argument:  "token",
 			Shorthand: "t",
+			Secret:    true,
 			Usage:     "The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN",
 			Value:     &config.authToken,
 			Default:   "",
-			Secret:    true,
 		},
 		{
 			Path:      "pager-team",
@@ -89,6 +90,15 @@ var (
 			Usage:     "The template for the alert summary, can be set with PAGERDUTY_SUMMARY_TEMPLATE",
 			Value:     &config.summaryTemplate,
 			Default:   "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}",
+		},
+		{
+			Path:      "details-template",
+			Env:       "PAGERDUTY_DETAILS_TEMPLATE",
+			Argument:  "details-template",
+			Shorthand: "d",
+			Usage:     "The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)",
+			Value:     &config.detailsTemplate,
+			Default:   "",
 		},
 	}
 )
@@ -149,15 +159,15 @@ func manageIncident(event *corev2.Event) error {
 	}
 	log.Printf("Incident severity: %s", severity)
 
-	summary, err := templates.EvalTemplate("summary", config.summaryTemplate, event)
+	summary, err := getSummary(event)
 	if err != nil {
-		return fmt.Errorf("failed to evaluate template %s: %v", config.summaryTemplate, err)
+		return err
 	}
-	// "The maximum permitted length of this property is 1024 characters."
-	if len(summary) > 1024 {
-		summary = summary[:1024]
+
+	details, err := getDetails(event)
+	if err != nil {
+		return err
 	}
-	log.Printf("Incident Summary: %s", summary)
 
 	// "The maximum permitted length of PG event is 512 KB. Let's limit check output to 256KB to prevent triggering a failed send"
 	if len(event.Check.Output) > 256000 {
@@ -170,7 +180,7 @@ func manageIncident(event *corev2.Event) error {
 		Component: event.Check.Name,
 		Severity:  severity,
 		Summary:   summary,
-		Details:   event,
+		Details:   details,
 	}
 
 	action := "trigger"
@@ -273,4 +283,34 @@ func parseStatusMap(statusMapJson string) (map[uint32]string, error) {
 	}
 
 	return statusToSeverityMap, nil
+}
+
+func getSummary(event *corev2.Event) (string, error) {
+	summary, err := templates.EvalTemplate("summary", config.summaryTemplate, event)
+	if err != nil {
+		return "", fmt.Errorf("failed to evaluate template %s: %v", config.summaryTemplate, err)
+	}
+	// "The maximum permitted length of this property is 1024 characters."
+	if len(summary) > 1024 {
+		summary = summary[:1024]
+	}
+	log.Printf("Incident Summary: %s", summary)
+	return summary, nil
+}
+
+func getDetails(event *corev2.Event) (interface{}, error) {
+	var (
+		details interface{}
+		err     error
+	)
+
+	if len(config.detailsTemplate) > 0 {
+		details, err = templates.EvalTemplate("details", config.detailsTemplate, event)
+		if err != nil {
+			return "", fmt.Errorf("failed to evaluate template %s: %v", config.detailsTemplate, err)
+		}
+	} else {
+		details = event
+	}
+	return details, nil
 }

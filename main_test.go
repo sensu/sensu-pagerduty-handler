@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -114,5 +116,37 @@ func Test_PagerTeamToken(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, teamToken)
 	assert.Equal(t, "token_value", teamToken)
+}
 
+func Test_GetSummary(t *testing.T) {
+	event := corev2.FixtureEvent("foo", "bar")
+	config.summaryTemplate = "{{.Entity.Name}}-{{.Check.Name}}"
+
+	summary, err := getSummary(event)
+	assert.Nil(t, err)
+	assert.Equal(t, "foo-bar", summary)
+}
+
+func Test_GetDetailsJSON(t *testing.T) {
+	event := corev2.FixtureEvent("foo", "bar")
+	config.detailsTemplate = ""
+
+	details, err := getDetails(event)
+	assert.Nil(t, err)
+	b, err := json.Marshal(details)
+	assert.Nil(t, err)
+	j := &corev2.Event{}
+	err = json.Unmarshal(b, &j)
+	assert.Nil(t, err)
+	assert.Equal(t, "foo", j.Entity.Name)
+	assert.Equal(t, "bar", j.Check.Name)
+}
+
+func Test_GetDetailsTemplate(t *testing.T) {
+	event := corev2.FixtureEvent("foo", "bar")
+	config.detailsTemplate = "{{.Entity.Name}}-{{.Check.Name}}"
+
+	details, err := getDetails(event)
+	assert.Nil(t, err)
+	assert.Equal(t, "foo-bar", details)
 }
