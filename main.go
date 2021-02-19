@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"regexp"
 
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/sensu-community/sensu-plugin-sdk/sensu"
@@ -17,6 +19,8 @@ type HandlerConfig struct {
 	dedupKeyTemplate string
 	statusMapJson    string
 	summaryTemplate  string
+	teamName         string
+	teamPrefix       string
 }
 
 type eventStatusMap map[string][]uint32
@@ -24,8 +28,8 @@ type eventStatusMap map[string][]uint32
 var (
 	config = HandlerConfig{
 		PluginConfig: sensu.PluginConfig{
-			Name:  "sensu-pagerduty-handler",
-			Short: "The Sensu Go PagerDuty handler for incident management",
+			Name:     "sensu-pagerduty-handler",
+			Short:    "The Sensu Go PagerDuty handler for incident management",
 			Keyspace: "sensu.io/plugins/sensu-pagerduty-handler/config",
 		},
 	}
@@ -39,6 +43,25 @@ var (
 			Usage:     "The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN",
 			Value:     &config.authToken,
 			Default:   "",
+			Secret:    true,
+		},
+		{
+			Path:      "pager-team",
+			Env:       "PAGERDUTY_TEAM",
+			Argument:  "team",
+			Shorthand: "T",
+			Usage:     "String for envvar name(alphanumeric and underscores) holding PagerDuty V2 API authentication token, can be set with PAGERDUTY_TEAM",
+			Value:     &config.teamName,
+			Default:   "",
+		},
+		{
+			Path:      "pager-team-suffix",
+			Env:       "PAGERDUTY_TEAM_PREFIX",
+			Argument:  "prefix",
+			Shorthand: "P",
+			Usage:     "Pager team prefix string to append if missing from pager-team name, can be set with PAGERDUTY_TEAM_PREFIX",
+			Value:     &config.teamPrefix,
+			Default:   "pagerduty_token_",
 		},
 		{
 			Path:      "dedup-key-template",
@@ -75,9 +98,43 @@ func main() {
 	goHandler.Execute()
 }
 
+func getTeamToken() (string, error) {
+	//replace illegal characters
+	reg, err := regexp.Compile("[^A-Za-z0-9]+")
+	if err != nil {
+		return "", err
+	}
+	teamEnvVar := reg.ReplaceAllString(config.teamName, "_")
+	//add prefix if needed
+	if len(config.teamPrefix) > 0 {
+		matched, err := regexp.MatchString("^"+config.teamPrefix, config.teamName)
+		if err != nil {
+			return "", err
+		}
+		if !matched {
+			teamEnvVar = config.teamPrefix + teamEnvVar
+		}
+	}
+	if len(teamEnvVar) == 0 {
+		return "", fmt.Errorf("unknown problem with team evironment variable")
+	}
+	teamToken := os.Getenv(teamEnvVar)
+	return teamToken, err
+}
+
 func checkArgs(event *corev2.Event) error {
 	if !event.HasCheck() {
 		return fmt.Errorf("event does not contain check")
+	}
+	if len(config.teamName) != 0 {
+		teamToken, err := getTeamToken()
+		if err != nil {
+			return err
+		}
+		if len(teamToken) != 0 {
+			config.authToken = teamToken
+		}
+
 	}
 	if len(config.authToken) == 0 {
 		return fmt.Errorf("no auth token provided")

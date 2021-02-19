@@ -3,6 +3,7 @@ package main
 import (
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -102,4 +103,16 @@ func Test_GetPagerDutyDedupKey(t *testing.T) {
 	dedupKey, err := getPagerDutyDedupKey(event)
 	assert.Nil(t, err)
 	assert.Equal(t, "foo-bar", dedupKey)
+}
+
+func Test_PagerTeamToken(t *testing.T) {
+	//event := corev2.FixtureEvent("foo", "bar")
+	config.teamName = "test_team"
+	config.teamPrefix = "test_prefix_"
+	os.Setenv("test_prefix_test_team", "token_value")
+	teamToken, err := getTeamToken()
+	assert.Nil(t, err)
+	assert.NotNil(t, teamToken)
+	assert.Equal(t, "token_value", teamToken)
+
 }
