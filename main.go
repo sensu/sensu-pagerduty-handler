@@ -58,7 +58,7 @@ var (
 			Path:     "pager-team-suffix",
 			Env:      "PAGERDUTY_TEAM_SUFFIX",
 			Argument: "pager-team-suffix",
-			Usage:    "Pager team prefix string to append if missing from pager-team name, can be set with PAGERDUTY_TEAM_PREFIX",
+			Usage:    "Pager team suffix string to append if missing from pager-team name, can be set with PAGERDUTY_TEAM_SUFFIX",
 			Value:    &config.teamSuffix,
 			Default:  "_pagerduty_token",
 		},
