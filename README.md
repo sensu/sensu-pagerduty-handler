@@ -16,6 +16,7 @@
   - [Environment variables](#environment-variables)
   - [Templates](#templates)
   - [Argument annotations](#argument-annotations)
+  - [Pager teams](#pager-teams)
   - [Proxy support](#proxy-support)
 - [Installation from source](#installation-from-source)
 - [Contributing](#contributing)
@@ -214,7 +215,7 @@ metadata:
 [...]
 ```
 
-### Pager Teams
+### Pager teams
 
 Instead of specifying the authentication token directly in the check or agent annotations, you can instead reference a pager team name, which will then be used to lookup the corresponding token from the handler environment. 
 Corresponding pager team token environment variables can be populated in the handler environment in 3 different ways
