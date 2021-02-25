@@ -7,6 +7,8 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## 2.2.0 - 2021-02-25
+
 ### Changed
 - Added pager-team functionality, allows you to specify team name and lookup corresponding token from environment variable
 - Updated README for specifying templates in check annotations
