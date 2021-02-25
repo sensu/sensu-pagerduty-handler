@@ -5,6 +5,7 @@ import (
 
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -104,6 +105,36 @@ func Test_GetPagerDutyDedupKey(t *testing.T) {
 	dedupKey, err := getPagerDutyDedupKey(event)
 	assert.Nil(t, err)
 	assert.Equal(t, "foo-bar", dedupKey)
+}
+
+func Test_PagerTeamToken(t *testing.T) {
+	config.teamName = "test_team"
+	config.teamSuffix = "_test_suffix"
+	os.Setenv("test_team_test_suffix", "token_value")
+	teamToken, err := getTeamToken()
+	assert.Nil(t, err)
+	assert.NotNil(t, teamToken)
+	assert.Equal(t, "token_value", teamToken)
+}
+
+func Test_PagerIllegalTeamToken(t *testing.T) {
+	config.teamName = "test-team"
+	config.teamSuffix = "_test-a-suffix"
+	os.Setenv("test_team_test_a_suffix", "token_value")
+	teamToken, err := getTeamToken()
+	assert.Nil(t, err)
+	assert.NotNil(t, teamToken)
+	assert.Equal(t, "token_value", teamToken)
+}
+
+func Test_PagerTeamNoSuffix(t *testing.T) {
+	config.teamName = "test-team"
+	config.teamSuffix = ""
+	os.Setenv("test_team", "token_value")
+	teamToken, err := getTeamToken()
+	assert.Nil(t, err)
+	assert.NotNil(t, teamToken)
+	assert.Equal(t, "token_value", teamToken)
 }
 
 func Test_GetSummary(t *testing.T) {
