@@ -45,10 +45,10 @@ Flags:
   -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, can be set with PAGERDUTY_DEDUP_KEY_TEMPLATE (default "{{.Entity.Name}}-{{.Check.Name}}")
   -d, --details-template string     The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)
   -h, --help                        help for sensu-pagerduty-handler
-      --pager-team string           String for envvar name(alphanumeric and underscores) holding PagerDuty V2 API authentication token, can be set with PAGER_TEAM
-      --pager-team-suffix string    Pager team suffix string to append if missing from pager-team name, can be set with PAGER_TEAM_SUFFIX (default "_pagerduty_token")
   -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP
   -S, --summary-template string     The template for the alert summary, can be set with PAGERDUTY_SUMMARY_TEMPLATE (default "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}")
+      --team string                 Envvar name for pager team(alphanumeric and underscores) holding PagerDuty V2 API authentication token, can be set with PAGERDUTY_TEAM
+      --team-suffix string          Pager team suffix string to append if missing from team name, can be set with PAGERDUTY_TEAM_SUFFIX (default "_pagerduty_token")
   -t, --token string                The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN
 
 Use "sensu-pagerduty-handler [command] --help" for more information about a command.
@@ -223,14 +223,14 @@ Corresponding pager team token environment variables can be populated in the han
 2. Kept as Sensu [secrets][13] and referenced in the handler definition
 3. Defined in the [backend service environment file][14], read in at backend service start.
 
-Pager team names will be automatically suffixed with configured --pager-team-suffix (default: `_pagerduty_suffix`)
-Note: Team name strings should be alphameric and underscores only. Groups of illegal characters will be mapped into a single underscore character. Ex: `example-_-team` will be converted to `example_team`
+Pager team names will be automatically suffixed with configured --team-suffix (default: `_pagerduty_suffix`)
+Note: Pager team name strings should be alphameric and underscores only. Groups of illegal characters will be mapped into a single underscore character. Ex: `example-_-team` will be converted to `example_team`
 
 If the team token lookup fails, the explicitly provided token will be used as a fallback if available.
 
 ##### Example of Check Using Pager Team and Handler Environment Variables:
 
-First set the pager-team annotation in the check or agent resource.
+First set the team annotation in the check or agent resource.
 ###### Check Snippet:
 ```
 ---
@@ -239,7 +239,7 @@ api_version: core/v2
 metadata: 
   name: example-check 
   annotations: 
-    sensu.io/plugins/sensu-pagerduty-handler/config/pager-team: team_1
+    sensu.io/plugins/sensu-pagerduty-handler/config/team: team_1
 ```
 
 And define the corresponding evironment variable for the pager team's token in the handler's environment.
