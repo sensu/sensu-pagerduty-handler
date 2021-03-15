@@ -7,6 +7,10 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## 2.2.1 - 2021-03-15
+### Changed
+- Add additional logging to help troubleshoot pager team annotations
+
 ## 2.2.0 - 2021-02-25
 
 ### Changed
