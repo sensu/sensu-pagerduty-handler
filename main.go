@@ -128,7 +128,13 @@ func getTeamToken() (string, error) {
 	if len(teamEnvVar) == 0 {
 		return "", fmt.Errorf("unknown problem with team evironment variable")
 	}
+	log.Printf("Looking up token envvar: %s", teamEnvVar)
 	teamToken := os.Getenv(teamEnvVar)
+	if len(teamToken) == 0 {
+		log.Printf("Token envvar %s is empty, using default token instead", teamEnvVar)
+	} else {
+		log.Printf("Token envvar %s found, replacing default token", teamEnvVar)
+	}
 	return teamToken, err
 }
 
