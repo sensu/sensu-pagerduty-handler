@@ -7,7 +7,11 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+- Add new `--contact-routing` mode for sending multiple Pagerduty updates, one per configured contact
+- Updated the README with more details on `--contact-routing`
+
 ## 2.2.1 - 2021-03-15
+
 ### Changed
 - Add additional logging to help troubleshoot pager team annotations
 
