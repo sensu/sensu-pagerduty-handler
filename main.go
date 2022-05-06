@@ -20,7 +20,7 @@ type HandlerConfig struct {
 	sensu.PluginConfig
 	authToken        string
 	dedupKeyTemplate string
-	statusMapJson    string
+	statusMapJSON    string
 	summaryTemplate  string
 	teamName         string
 	teamSuffix       string
@@ -82,7 +82,7 @@ var (
 			Argument:  "status-map",
 			Shorthand: "s",
 			Usage:     "The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP",
-			Value:     &config.statusMapJson,
+			Value:     &config.statusMapJSON,
 			Default:   "",
 		},
 		{
@@ -266,7 +266,7 @@ func getContactToken(contact string) (string, error) {
 }
 
 func manageIncident(event *corev2.Event, token string) error {
-	severity, err := getPagerDutySeverity(event, config.statusMapJson)
+	severity, err := getPagerDutySeverity(event, config.statusMapJSON)
 	if err != nil {
 		return err
 	}
@@ -350,12 +350,12 @@ func getPagerDutyDedupKey(event *corev2.Event) (string, error) {
 	return templates.EvalTemplate("dedupKey", config.dedupKeyTemplate, event)
 }
 
-func getPagerDutySeverity(event *corev2.Event, statusMapJson string) (string, error) {
+func getPagerDutySeverity(event *corev2.Event, statusMapJSON string) (string, error) {
 	var statusMap map[uint32]string
 	var err error
 
-	if len(statusMapJson) > 0 {
-		statusMap, err = parseStatusMap(statusMapJson)
+	if len(statusMapJSON) > 0 {
+		statusMap, err = parseStatusMap(statusMapJSON)
 		if err != nil {
 			return "", err
 		}
@@ -379,11 +379,11 @@ func getPagerDutySeverity(event *corev2.Event, statusMapJson string) (string, er
 	return severity, nil
 }
 
-func parseStatusMap(statusMapJson string) (map[uint32]string, error) {
+func parseStatusMap(statusMapJSON string) (map[uint32]string, error) {
 	validPagerDutySeverities := map[string]bool{"info": true, "critical": true, "warning": true, "error": true}
 
 	statusMap := eventStatusMap{}
-	err := json.Unmarshal([]byte(statusMapJson), &statusMap)
+	err := json.Unmarshal([]byte(statusMapJSON), &statusMap)
 	if err != nil {
 		return nil, err
 	}

@@ -59,10 +59,10 @@ func Test_ParseStatusMap_InvalidSeverity(t *testing.T) {
 }
 
 func Test_GetPagerDutySeverity_Success(t *testing.T) {
-	statusMapJson := "{\"info\":[130,10],\"error\":[4]}"
+	statusMapJSON := "{\"info\":[130,10],\"error\":[4]}"
 
 	eventWithStatus.Check.Status = 10
-	pagerDutySeverity, err := getPagerDutySeverity(&eventWithStatus, statusMapJson)
+	pagerDutySeverity, err := getPagerDutySeverity(&eventWithStatus, statusMapJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, "info", pagerDutySeverity)
 }
@@ -82,19 +82,19 @@ func Test_GetPagerDutySeverity_NoStatusMapLowStatus(t *testing.T) {
 }
 
 func Test_GetPagerDutySeverity_InvalidStatusMap(t *testing.T) {
-	statusMapJson := "{\"info\":[130,10],\"error\"[4]}"
+	statusMapJSON := "{\"info\":[130,10],\"error\"[4]}"
 
 	eventWithStatus.Check.Status = 2
-	pagerDutySeverity, err := getPagerDutySeverity(&eventWithStatus, statusMapJson)
+	pagerDutySeverity, err := getPagerDutySeverity(&eventWithStatus, statusMapJSON)
 	assert.NotNil(t, err)
 	assert.Empty(t, pagerDutySeverity)
 }
 
 func Test_GetPagerDutySeverity_StatusMapSeverityNotInMap(t *testing.T) {
-	statusMapJson := "{\"info\":[130,10],\"error\":[4]}"
+	statusMapJSON := "{\"info\":[130,10],\"error\":[4]}"
 
 	eventWithStatus.Check.Status = 2
-	pagerDutySeverity, err := getPagerDutySeverity(&eventWithStatus, statusMapJson)
+	pagerDutySeverity, err := getPagerDutySeverity(&eventWithStatus, statusMapJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, "critical", pagerDutySeverity)
 }
