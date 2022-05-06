@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-
 	"os"
+	"reflect"
 	"testing"
 
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
@@ -169,4 +169,167 @@ func Test_GetDetailsTemplate(t *testing.T) {
 	details, err := getDetails(event)
 	assert.Nil(t, err)
 	assert.Equal(t, "foo-bar", details)
+}
+
+func Test_checkArgs(t *testing.T) {
+	originalConfig := config
+	type args struct {
+		event *corev2.Event
+	}
+	tests := []struct {
+		name       string
+		config     HandlerConfig
+		args       args
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "error when event has no check",
+			args: args{
+				event: func() *corev2.Event {
+					event := corev2.FixtureEvent("foo", "bar")
+					event.Check = nil
+					return event
+				}(),
+			},
+			wantErr:    true,
+			wantErrMsg: "event does not contain check",
+		},
+		{
+			name: "error when contacts have invalid characters",
+			config: HandlerConfig{
+				contactRouting: true,
+			},
+			args: args{
+				event: func() *corev2.Event {
+					event := corev2.FixtureEvent("foo", "bar")
+					event.Annotations["contacts"] = "valid_contact,invalid-contact"
+					return event
+				}(),
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid contact syntax: invalid-contact",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config = tt.config
+
+			err := checkArgs(tt.args.event)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("checkArgs() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil && err.Error() != tt.wantErrMsg {
+				t.Errorf("checkArgs() error msg = %v, want %v", err, tt.wantErrMsg)
+			}
+		})
+		config = originalConfig
+	}
+}
+
+func Test_handleEvent(t *testing.T) {
+	type args struct {
+		event *corev2.Event
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := handleEvent(tt.args.event); (err != nil) != tt.wantErr {
+				t.Errorf("handleEvent() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_handleEventContactRouting(t *testing.T) {
+	type args struct {
+		event *corev2.Event
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := handleEventContactRouting(tt.args.event); (err != nil) != tt.wantErr {
+				t.Errorf("handleEventContactRouting() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_handleEventForContact(t *testing.T) {
+	type args struct {
+		event   *corev2.Event
+		contact string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := handleEventForContact(tt.args.event, tt.args.contact); (err != nil) != tt.wantErr {
+				t.Errorf("handleEventForContact() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_getContacts(t *testing.T) {
+	type args struct {
+		event *corev2.Event
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getContacts(tt.args.event); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getContacts() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getContactToken(t *testing.T) {
+	type args struct {
+		contact string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getContactToken(tt.args.contact)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getContactToken() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getContactToken() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

@@ -2,15 +2,18 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/sensu-community/sensu-plugin-sdk/sensu"
 	"github.com/sensu-community/sensu-plugin-sdk/templates"
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
+	"golang.org/x/exp/slices"
 )
 
 type HandlerConfig struct {
@@ -22,6 +25,8 @@ type HandlerConfig struct {
 	teamName         string
 	teamSuffix       string
 	detailsTemplate  string
+	contactRouting   bool
+	contacts         []string
 }
 
 type eventStatusMap map[string][]uint32
@@ -98,11 +103,19 @@ var (
 			Value:     &config.detailsTemplate,
 			Default:   "",
 		},
+		{
+			Path:     "",
+			Env:      "",
+			Argument: "contact-routing",
+			Usage:    "Enable contact routing",
+			Value:    &config.contactRouting,
+			Default:  false,
+		},
 	}
 )
 
 func main() {
-	goHandler := sensu.NewGoHandler(&config.PluginConfig, pagerDutyConfigOptions, checkArgs, manageIncident)
+	goHandler := sensu.NewGoHandler(&config.PluginConfig, pagerDutyConfigOptions, checkArgs, handleEvent)
 	goHandler.Execute()
 }
 
@@ -140,8 +153,9 @@ func getTeamToken() (string, error) {
 
 func checkArgs(event *corev2.Event) error {
 	if !event.HasCheck() {
-		return fmt.Errorf("event does not contain check")
+		return errors.New("event does not contain check")
 	}
+
 	if len(config.teamName) != 0 {
 		teamToken, err := getTeamToken()
 		if err != nil {
@@ -152,13 +166,106 @@ func checkArgs(event *corev2.Event) error {
 		}
 
 	}
-	if len(config.authToken) == 0 {
-		return fmt.Errorf("no auth token provided")
+
+	if config.contactRouting {
+		contacts := getContacts(event)
+		if len(contacts) == 0 {
+			return errors.New("contact routing enabled but no contacts were found")
+		}
+		if err := validateContacts(contacts); err != nil {
+			return err
+		}
+		config.contacts = contacts
+	} else {
+		if len(config.authToken) == 0 {
+			return errors.New("no auth token provided")
+		}
+	}
+
+	return nil
+}
+
+func handleEvent(event *corev2.Event) error {
+	if config.contactRouting {
+		return handleEventContactRouting(event)
+	}
+	return manageIncident(event, config.authToken)
+}
+
+func handleEventContactRouting(event *corev2.Event) error {
+	errd := false
+	contacts := config.contacts
+	log.Printf("Contact routing is enabled (contacts: %s)", strings.Join(contacts, ", "))
+
+	for _, contact := range contacts {
+		if err := handleEventForContact(event, contact); err != nil {
+			log.Printf("WARNING: skipping contact \"%s\" (%s)", contact, err)
+			errd = true
+		}
+	}
+
+	if errd {
+		return errors.New("handler execution error for one or more contacts")
 	}
 	return nil
 }
 
-func manageIncident(event *corev2.Event) error {
+func handleEventForContact(event *corev2.Event, contact string) error {
+	token, err := getContactToken(contact)
+	if err != nil {
+		return err
+	}
+
+	return manageIncident(event, token)
+}
+
+func validateContacts(contacts []string) error {
+	for _, contact := range contacts {
+		if err := validateContact(contact); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateContact(contact string) error {
+	validContact := regexp.MustCompile(`^[A-Za-z0-9_]+$`)
+	if !validContact.MatchString(contact) {
+		return fmt.Errorf("invalid contact syntax: %s", contact)
+	}
+	return nil
+}
+
+func getContacts(event *corev2.Event) []string {
+	contacts := []string{}
+	loadContactsFromMap(&contacts, event.Annotations)
+	loadContactsFromMap(&contacts, event.Check.Annotations)
+	loadContactsFromMap(&contacts, event.Entity.Annotations)
+
+	return contacts
+}
+
+func loadContactsFromMap(contacts *[]string, m map[string]string) {
+	if str, ok := m["contacts"]; ok {
+		newContacts := strings.Split(str, ",")
+		for _, contact := range newContacts {
+			if !slices.Contains(*contacts, contact) {
+				*contacts = append(*contacts, contact)
+			}
+		}
+	}
+}
+
+func getContactToken(contact string) (string, error) {
+	name := fmt.Sprintf("PAGERDUTY_TOKEN_%s", strings.ToUpper(contact))
+	token := os.Getenv(name)
+	if token == "" {
+		return "", fmt.Errorf("no environment variable found for \"%s\"", name)
+	}
+	return token, nil
+}
+
+func manageIncident(event *corev2.Event, token string) error {
 	severity, err := getPagerDutySeverity(event, config.statusMapJSON)
 	if err != nil {
 		return err
@@ -203,7 +310,7 @@ func manageIncident(event *corev2.Event) error {
 		return fmt.Errorf("pagerduty dedup key is empty")
 	}
 	pdEvent := pagerduty.V2Event{
-		RoutingKey: config.authToken,
+		RoutingKey: token,
 		Action:     action,
 		Payload:    &pdPayload,
 		DedupKey:   dedupKey,
@@ -220,7 +327,7 @@ func manageIncident(event *corev2.Event) error {
 			Details:   "Original payload had an error, maybe due to event length. PagerDuty Events must be less than 512KB",
 		}
 		failEvent := pagerduty.V2Event{
-			RoutingKey: config.authToken,
+			RoutingKey: token,
 			Action:     action,
 			Payload:    &failPayload,
 			DedupKey:   dedupKey,
