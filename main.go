@@ -260,7 +260,7 @@ func getContactToken(contact string) (string, error) {
 	name := fmt.Sprintf("PAGERDUTY_TOKEN_%s", strings.ToUpper(contact))
 	token := os.Getenv(name)
 	if token == "" {
-		return "", fmt.Errorf("no environment variable found for \"%s\"", "")
+		return "", fmt.Errorf("no environment variable found for \"%s\"", name)
 	}
 	return token, nil
 }
