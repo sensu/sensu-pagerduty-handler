@@ -7,6 +7,10 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## 2.3.0 – 2022-05-06
+
+### Changed
+
 - Add new `--contact-routing` mode for sending multiple Pagerduty updates, one per configured contact
 - Updated the README with more details on `--contact-routing`
 

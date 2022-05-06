@@ -17,6 +17,7 @@
   - [Templates](#templates)
   - [Argument annotations](#argument-annotations)
   - [Pager teams](#pager-teams)
+  - [Contact routing](#contact-routing)
   - [Proxy support](#proxy-support)
 - [Installation from source](#installation-from-source)
 - [Contributing](#contributing)
