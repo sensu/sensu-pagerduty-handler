@@ -42,6 +42,7 @@ Available Commands:
   version     Print the version number of this plugin
 
 Flags:
+      --contact-routing             Enable contact routing
   -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, can be set with PAGERDUTY_DEDUP_KEY_TEMPLATE (default "{{.Entity.Name}}-{{.Check.Name}}")
   -d, --details-template string     The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)
   -h, --help                        help for sensu-pagerduty-handler
@@ -217,7 +218,7 @@ metadata:
 
 ### Pager teams
 
-Instead of specifying the authentication token directly in the check or agent annotations, you can instead reference a pager team name, which will then be used to lookup the corresponding token from the handler environment. 
+Instead of specifying the authentication token directly in the check or agent annotations, you can instead reference a pager team name, which will then be used to lookup the corresponding token from the handler environment.
 Corresponding pager team token environment variables can be populated in the handler environment in 3 different ways
 1. Explicitly set in the handler definition
 2. Kept as Sensu [secrets][13] and referenced in the handler definition
@@ -234,15 +235,16 @@ First set the team annotation in the check or agent resource.
 ###### Check Snippet:
 ```
 ---
-type: CheckConfig 
-api_version: core/v2 
-metadata: 
-  name: example-check 
-  annotations: 
+type: CheckConfig
+api_version: core/v2
+metadata:
+  name: example-check
+  annotations:
     sensu.io/plugins/sensu-pagerduty-handler/config/team: team_1
 ```
 
 And define the corresponding evironment variable for the pager team's token in the handler's environment.
+
 ###### Handler Snippet:
 ```
 ---
@@ -267,10 +269,71 @@ spec:
   secrets:
   - name: PAGERDUTY_TOKEN
     secret: pagerduty_authtoken
-  env_vars: 
+  env_vars:
   - team_1_pagerduty_token="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-  
+
 ```
+
+### Contact Routing
+
+The Sensu Pagerduty Handler provides support for generating one Pagerduty event per "contact" via the `--contact-routing` flag.
+
+With `--contact-routing` enabled, the Sensu Pagerduty Handler will do the following:
+
+* Check for and merge the entity, check, and/or event `contacts` annotation.
+
+  The `contacts` annotation supports a comma-separated list of contact names containing alpha-numeric characters and underscore (`_`) characters only.
+
+  Example:
+
+  ```
+  annotations:
+    contacts: "team_a,team_b"
+  ```
+
+  _NOTE: when `--contact-routing` is enabled, the handler will log a message like `Pagerduty contact routing is enabled (contacts: team_a, team_b)`.
+  If `--contact-routing` is enabled and no `contacts` annotations are found, the handler will log an error like `contact routing enabled but no contacts were found`._
+
+* Lookup contact-specific environment variables for Pagerduty API Authentication
+
+  When `--contact-routing` is enabled, the Sensu Pagerduty Handler will attempt to create or update an event per configured "contact".
+  For each configured "contact", the Sensu Pagerduty Handler will look for a matching environment variable containing a Pagerduty token.
+  Pagerduty token environment variables should be prefixed with `PAGERDUTY_TOKEN_` and match the contact name in all-uppercase (e.g. the contact "team_a" needs a corresponding `PAGERDUTY_TOKEN_TEAM_A` environment variable).
+
+  _NOTE: contact names are converted to environment variables via `fmt.Sprintf("PAGERDUTY_TOKEN_%s",strings.ToUpper(contact))`._
+
+  If a matching contact environment variable is found, the event will be processed.
+  If the contact environment variable is not found, the handler will log a warning (e.g. `WARNING: skipping contact: "team-a" (no environment variable found for "PAGERDUTY_TOKEN_TEAM_A")`\n).
+
+#### Contact Routing Example
+
+```yaml
+---
+api_version: core/v2
+type: Handler
+metadata:
+  name: pagerduty
+spec:
+  type: pipe
+  command: >-
+    sensu-pagerduty-handler
+    --contact-routing
+    --dedup-key-template "{{.Entity.Namespace}}-{{.Entity.Name}}-{{.Check.Name}}"
+    --status-map "{\"info\":[0],\"warning\": [1],\"critical\": [2],\"error\": [3,127]}"
+    --summary-template "[{{.Entity.Namespace}}] {{.Entity.Name}}/{{.Check.Name}}: {{.Check.State}}"
+    --details-template "{{ .Check.Name }} is {{ .Check.State }} on {{ .Entity.Name }} (namespace: {{ .Entity.Namespace }})"
+  timeout: 10
+  filters: []
+  runtime_assets: []
+  env_vars: []
+  secrets:
+    - name: PAGERDUTY_TOKEN_TEAM_A
+      secret: pagerduty_token_team_a
+    - name: PAGERDUTY_TOKEN_TEAM_B
+      secret: pagerduty_token_team_b
+```
+
+_NOTE: contact routing is compatible with Sensu Secrets or environment variables set via Handler `env_vars`, but given the sensitive nature of a Pagerduty API token, using secrets management is strongly encouraged._
 
 ### Proxy support
 
