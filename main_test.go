@@ -19,9 +19,9 @@ var (
 )
 
 func Test_ParseStatusMap_Success(t *testing.T) {
-	json := "{\"info\":[130,10],\"error\":[4]}"
+	statusJSON := "{\"info\":[130,10],\"error\":[4]}"
 
-	statusMap, err := parseStatusMap(json)
+	statusMap, err := parseStatusMap(statusJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(statusMap))
 	assert.Equal(t, "info", statusMap[130])
@@ -30,9 +30,9 @@ func Test_ParseStatusMap_Success(t *testing.T) {
 }
 
 func Test_ParseStatusMap_EmptyStatus(t *testing.T) {
-	json := "{\"info\":[130,10],\"error\":[]}"
+	statusJSON := "{\"info\":[130,10],\"error\":[]}"
 
-	statusMap, err := parseStatusMap(json)
+	statusMap, err := parseStatusMap(statusJSON)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(statusMap))
 	assert.Equal(t, "info", statusMap[130])
@@ -41,18 +41,18 @@ func Test_ParseStatusMap_EmptyStatus(t *testing.T) {
 }
 
 func Test_ParseStatusMap_InvalidJson(t *testing.T) {
-	json := "{\"info\":[130,10],\"error:[]}"
+	statusJSON := "{\"info\":[130,10],\"error:[]}"
 
-	statusMap, err := parseStatusMap(json)
+	statusMap, err := parseStatusMap(statusJSON)
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "unexpected end of JSON input")
 	assert.Nil(t, statusMap)
 }
 
 func Test_ParseStatusMap_InvalidSeverity(t *testing.T) {
-	json := "{\"info\":[130,10],\"invalid\":[4]}"
+	statusJSON := "{\"info\":[130,10],\"invalid\":[4]}"
 
-	statusMap, err := parseStatusMap(json)
+	statusMap, err := parseStatusMap(statusJSON)
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "invalid pagerduty severity: invalid")
 	assert.Nil(t, statusMap)
@@ -111,7 +111,7 @@ func Test_GetPagerDutyDedupKey(t *testing.T) {
 func Test_PagerTeamToken(t *testing.T) {
 	config.teamName = "test_team"
 	config.teamSuffix = "_test_suffix"
-	os.Setenv("test_team_test_suffix", "token_value")
+	_ = os.Setenv("test_team_test_suffix", "token_value")
 	teamToken, err := getTeamToken()
 	assert.Nil(t, err)
 	assert.NotNil(t, teamToken)
@@ -121,7 +121,7 @@ func Test_PagerTeamToken(t *testing.T) {
 func Test_PagerIllegalTeamToken(t *testing.T) {
 	config.teamName = "test-team"
 	config.teamSuffix = "_test-a-suffix"
-	os.Setenv("test_team_test_a_suffix", "token_value")
+	_ = os.Setenv("test_team_test_a_suffix", "token_value")
 	teamToken, err := getTeamToken()
 	assert.Nil(t, err)
 	assert.NotNil(t, teamToken)
@@ -131,7 +131,7 @@ func Test_PagerIllegalTeamToken(t *testing.T) {
 func Test_PagerTeamNoSuffix(t *testing.T) {
 	config.teamName = "test-team"
 	config.teamSuffix = ""
-	os.Setenv("test_team", "token_value")
+	_ = os.Setenv("test_team", "token_value")
 	teamToken, err := getTeamToken()
 	assert.Nil(t, err)
 	assert.NotNil(t, teamToken)
@@ -169,6 +169,46 @@ func Test_GetDetailsTemplate(t *testing.T) {
 	details, err := getDetails(event)
 	assert.Nil(t, err)
 	assert.Equal(t, "foo-bar", details)
+}
+
+func Test_GetDetailsObj(t *testing.T) {
+	tests := []struct {
+		name            string
+		detailsTemplate string
+		expectError     bool
+	}{
+		{
+			name:            "valid-json",
+			detailsTemplate: `{"entity": "{{.Entity.Name}}", "check":"{{.Check.Name}}", "namespace":"{{.Namespace}}", "id":"{{.GetUUID.String}}"}`,
+			expectError:     false,
+		},
+		{
+			name:            "invalid-json",
+			detailsTemplate: `{"entity": "{{.Entity.Name}}"WHAT?}`,
+			expectError:     true,
+		},
+	}
+	event := corev2.FixtureEvent("entity-name", "check-name")
+	config.detailsFormat = "json"
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config.detailsTemplate = test.detailsTemplate
+			details, err := getDetails(event)
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, details)
+				detailMap, ok := details.(map[string]interface{})
+				assert.True(t, ok)
+				assert.Equal(t, "entity-name", detailMap["entity"])
+				assert.Equal(t, "check-name", detailMap["check"])
+				assert.Equal(t, "default", detailMap["namespace"])
+				assert.Equal(t, event.GetUUID().String(), detailMap["id"])
+			}
+		})
+	}
 }
 
 func Test_checkArgs(t *testing.T) {
@@ -209,6 +249,51 @@ func Test_checkArgs(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "invalid contact syntax: invalid-contact",
+		},
+		{
+			name: "no error with json details format",
+			config: HandlerConfig{
+				detailsFormat: "json",
+				authToken:     "aaa",
+			},
+			args: args{
+				event: func() *corev2.Event {
+					event := corev2.FixtureEvent("foo", "bar")
+					return event
+				}(),
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name: "no error with string details format",
+			config: HandlerConfig{
+				detailsFormat: "string",
+				authToken:     "aaa",
+			},
+			args: args{
+				event: func() *corev2.Event {
+					event := corev2.FixtureEvent("foo", "bar")
+					return event
+				}(),
+			},
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name: "no error with string details format",
+			config: HandlerConfig{
+				detailsFormat: "invalidformat",
+				authToken:     "aaa",
+			},
+			args: args{
+				event: func() *corev2.Event {
+					event := corev2.FixtureEvent("foo", "bar")
+					return event
+				}(),
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid details format: invalidformat",
 		},
 	}
 	for _, tt := range tests {

@@ -45,6 +45,7 @@ Available Commands:
 Flags:
       --contact-routing             Enable contact routing
   -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, can be set with PAGERDUTY_DEDUP_KEY_TEMPLATE (default "{{.Entity.Name}}-{{.Check.Name}}")
+      --details-format string       The format of the details output ('string' or 'json'), can be set with PAGERDUTY_DETAILS_FORMAT (default "string")
   -d, --details-template string     The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)
   -h, --help                        help for sensu-pagerduty-handler
   -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP
@@ -132,6 +133,7 @@ spec:
     --status-map "{\"info\":[0],\"warning\": [1],\"critical\": [2],\"error\": [3,127]}"
     --summary-template "[{{.Entity.Namespace}}] {{.Entity.Name}}/{{.Check.Name}}: {{.Check.State}}"
     --details-template "{{.Check.Output}}\n\n{{.Check}}"
+    --details-format string
   timeout: 10
   runtime_assets:
   - sensu/sensu-pagerduty-handler
@@ -148,12 +150,16 @@ Most arguments for this handler are available to be set via environment
 variables.  However, any arguments specified directly on the command line
 override the corresponding environment variable.
 
-|Argument            |Environment Variable        |
-|--------------------|----------------------------|
-|--token             |PAGERDUTY_TOKEN             |
-|--summary-template  |PAGERDUTY_SUMMARY_TEMPLATE  |
-|--dedup-key-template|PAGERDUTY_DEDUP_KEY_TEMPLATE|
-|--status-map        |PAGERDUTY_STATUS_MAP        |
+| Argument             | Environment Variable         |
+|----------------------|------------------------------|
+| --dedup-key-template | PAGERDUTY_DEDUP_KEY_TEMPLATE |
+| --details-template   | PAGERDUTY_DETAILS_TEMPLATE   |
+| --details-format     | PAGERDUTY_DETAILS_FORMAT     |
+| --status-map         | PAGERDUTY_STATUS_MAP         |
+| --summary-template   | PAGERDUTY_SUMMARY_TEMPLATE   |
+| --team               | PAGERDUTY_TEAM               |
+| --team-suffix        | PAGERDUTY_TEAM_SUFFIX        |
+| --token              | PAGERDUTY_TOKEN              |
 
 **Security Note:** Care should be taken to not expose the auth token for this
 handler by specifying it on the command line or by directly setting the
