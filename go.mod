@@ -1,6 +1,6 @@
 module github.com/sensu/sensu-pagerduty-handler
 
-go 1.18
+go 1.20
 
 require (
 	github.com/PagerDuty/go-pagerduty v1.3.0
@@ -40,9 +40,9 @@ require (
 	github.com/spf13/viper v1.7.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.0 // indirect
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
-	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
-	golang.org/x/text v0.3.5 // indirect
+	golang.org/x/net v0.0.0-20210610124326-52da8fb2a613 // indirect
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	golang.org/x/text v0.3.8 // indirect
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
 	google.golang.org/grpc v1.38.0 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
