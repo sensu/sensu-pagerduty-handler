@@ -7,7 +7,12 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-## 2.3.0 – 2022-05-06
+## 2.4.0 - 2023-04-04
+
+###
+- Add `--details-format` option to be able to specify if the event details should be sent as a string or a JSON document
+
+## 2.3.0 – 2022-05-06
 
 ### Changed
 

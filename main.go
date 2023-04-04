@@ -25,11 +25,31 @@ type HandlerConfig struct {
 	teamName         string
 	teamSuffix       string
 	detailsTemplate  string
+	detailsFormat    string
 	contactRouting   bool
 	contacts         []string
 }
 
 type eventStatusMap map[string][]uint32
+
+type detailsFormat string
+
+const (
+	stringDetailsFormat detailsFormat = "string"
+	jsonDetailsFormat   detailsFormat = "json"
+)
+
+func (df detailsFormat) IsValid() bool {
+	switch df {
+	case stringDetailsFormat, jsonDetailsFormat:
+		return true
+	}
+	return false
+}
+
+func (df detailsFormat) String() string {
+	return string(df)
+}
 
 var (
 	config = HandlerConfig{
@@ -102,6 +122,15 @@ var (
 			Usage:     "The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)",
 			Value:     &config.detailsTemplate,
 			Default:   "",
+		},
+		{
+			Path:      "details-format",
+			Env:       "PAGERDUTY_DETAILS_FORMAT",
+			Argument:  "details-format",
+			Shorthand: "",
+			Usage:     "The format of the details output ('string' or 'json'), can be set with PAGERDUTY_DETAILS_FORMAT",
+			Value:     &config.detailsFormat,
+			Default:   "string",
 		},
 		{
 			Path:     "",
@@ -180,6 +209,10 @@ func checkArgs(event *corev2.Event) error {
 		if len(config.authToken) == 0 {
 			return errors.New("no auth token provided")
 		}
+	}
+
+	if !detailsFormat(config.detailsFormat).IsValid() {
+		return fmt.Errorf("invalid details format: %s", config.detailsFormat)
 	}
 
 	return nil
@@ -395,7 +428,7 @@ func parseStatusMap(statusMapJSON string) (map[uint32]string, error) {
 			return nil, fmt.Errorf("invalid pagerduty severity: %s", severity)
 		}
 		for i := range statuses {
-			statusToSeverityMap[uint32(statuses[i])] = severity
+			statusToSeverityMap[statuses[i]] = severity
 		}
 	}
 
@@ -415,16 +448,21 @@ func getSummary(event *corev2.Event) (string, error) {
 	return summary, nil
 }
 
-func getDetails(event *corev2.Event) (interface{}, error) {
-	var (
-		details interface{}
-		err     error
-	)
-
+func getDetails(event *corev2.Event) (details interface{}, err error) {
 	if len(config.detailsTemplate) > 0 {
-		details, err = templates.EvalTemplate("details", config.detailsTemplate, event)
+		detailsStr, err := templates.EvalTemplate("details", config.detailsTemplate, event)
 		if err != nil {
 			return "", fmt.Errorf("failed to evaluate template %s: %v", config.detailsTemplate, err)
+		}
+
+		details = detailsStr
+		if config.detailsFormat == jsonDetailsFormat.String() {
+			var msgMap interface{}
+			err = json.Unmarshal([]byte(detailsStr), &msgMap)
+			if err != nil {
+				return "", fmt.Errorf("failed to unmarshal json details: %v", err)
+			}
+			details = msgMap
 		}
 	} else {
 		details = event
