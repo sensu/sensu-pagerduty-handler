@@ -33,6 +33,13 @@ type HandlerConfig struct {
 	alternateEndpoint string
 	contactRouting    bool
 	contacts          []string
+	clientName        string
+	sensuBaseUrl      string
+	linkAnnotations   bool
+	useEventTimestamp bool
+	classTemplate     string
+	groupTemplate     string
+	componentTemplate string
 }
 
 type eventStatusMap map[string][]uint32
@@ -163,6 +170,68 @@ var (
 			Value:    &config.contactRouting,
 			Default:  false,
 		},
+		&sensu.PluginConfigOption[string]{
+			Path:     "client-name",
+			Env:      "",
+			Argument: "client-name",
+			Usage:    "Name for the client, this will appear in Pagerduty when events are logged",
+			Value:    &config.clientName,
+			Default:  "Sensu",
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:      "sensu-base-url",
+			Env:       "PAGERDUTY_SENSU_BASE_URL",
+			Argument:  "sensu-base-url",
+			Shorthand: "u",
+			Usage:     "Base URL for sensu. The handler will add a link to the event using this",
+			Value:     &config.sensuBaseUrl,
+			Default:   "",
+		},
+		&sensu.PluginConfigOption[bool]{
+			Path:      "link-annotations",
+			Env:       "",
+			Argument:  "link-annotations",
+			Shorthand: "l",
+			Usage:     "Add links for any annotations that are a URL",
+			Value:     &config.linkAnnotations,
+			Default:   false,
+		},
+		&sensu.PluginConfigOption[bool]{
+			Path:      "use-event-timestamp",
+			Env:       "",
+			Argument:  "use-event-timestamp",
+			Shorthand: "T",
+			Usage:     "Use the timestamp from the Sensu event for the PD-CEF timestamp field",
+			Value:     &config.useEventTimestamp,
+			Default:   false,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:      "class-template",
+			Env:       "PAGERDUTY_CLASS_TEMPLATE",
+			Argument:  "class-template",
+			Shorthand: "",
+			Usage:     "Template for PD-CEF class field, can be set with PAGERDUTY_CLASS_TEMPLATE",
+			Value:     &config.classTemplate,
+			Default:   "",
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:      "group-template",
+			Env:       "PAGERDUTY_GROUP_TEMPLATE",
+			Argument:  "group-template",
+			Shorthand: "",
+			Usage:     "Template for PD-CEF group field, can be set with PAGERDUTY_GROUP_TEMPLATE",
+			Value:     &config.groupTemplate,
+			Default:   "",
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:      "component-template",
+			Env:       "PAGERDUTY_COMPONENT_TEMPLATE",
+			Argument:  "component-template",
+			Shorthand: "",
+			Usage:     "Template for PD-CEF component field, can be set with PAGERDUTY_COMPONENT_TEMPLATE",
+			Value:     &config.componentTemplate,
+			Default:   "",
+		},
 	}
 )
 
@@ -217,7 +286,6 @@ func checkArgs(event *corev2.Event) error {
 		if len(teamToken) != 0 {
 			config.authToken = teamToken
 		}
-
 	}
 
 	if config.contactRouting {
@@ -352,6 +420,21 @@ func manageIncident(event *corev2.Event, token string) error {
 		return err
 	}
 
+	group, err := getGroup(event)
+	if err != nil {
+		return err
+	}
+
+	component, err := getComponent(event)
+	if err != nil {
+		return err
+	}
+
+	class, err := getClass(event)
+	if err != nil {
+		return err
+	}
+
 	// "The maximum permitted length of PG event is 512 KB. Let's limit check output to 256KB to prevent triggering a failed send"
 	if len(event.Check.Output) > 256000 {
 		log.Printf("Warning Incident Payload Truncated!")
@@ -360,10 +443,13 @@ func manageIncident(event *corev2.Event, token string) error {
 
 	pdPayload := pagerduty.V2Payload{
 		Source:    event.Entity.Name,
-		Component: event.Check.Name,
+		Component: component,
 		Severity:  severity,
 		Summary:   summary,
 		Details:   details,
+		Class:     class,
+		Group:     group,
+		Timestamp: getTimestamp(event),
 	}
 
 	action := "trigger"
@@ -384,6 +470,9 @@ func manageIncident(event *corev2.Event, token string) error {
 		Action:     action,
 		Payload:    &pdPayload,
 		DedupKey:   dedupKey,
+		Client:     config.clientName,
+		ClientURL:  getClientUrl(event),
+		Links:      getLinks(event),
 	}
 
 	client := pagerduty.NewClient()
@@ -413,11 +502,17 @@ func manageIncident(event *corev2.Event, token string) error {
 			return err
 		}
 		// FUTURE send to AH
-		log.Printf("Failback event (%s) submitted to PagerDuty, Status: %s, Dedup Key: %s, Message: %s", action, failResponse.Status, failResponse.DedupKey, failResponse.Message)
+		log.Printf(
+			"Failback event (%s) submitted to PagerDuty, Status: %s, Dedup Key: %s, Message: %s", action,
+			failResponse.Status, failResponse.DedupKey, failResponse.Message,
+		)
 	}
 
 	// FUTURE send to AH
-	log.Printf("Event (%s) submitted to PagerDuty, Status: %s, Dedup Key: %s, Message: %s", action, eventResponse.Status, eventResponse.DedupKey, eventResponse.Message)
+	log.Printf(
+		"Event (%s) submitted to PagerDuty, Status: %s, Dedup Key: %s, Message: %s", action, eventResponse.Status,
+		eventResponse.DedupKey, eventResponse.Message,
+	)
 	return nil
 }
 
@@ -490,6 +585,69 @@ func getSummary(event *corev2.Event) (string, error) {
 	return summary, nil
 }
 
+func getTimestamp(event *corev2.Event) string {
+	timestamp := ""
+	if config.useEventTimestamp {
+		timestamp = time.Unix(event.Timestamp, 0).Format(time.RFC3339)
+	}
+
+	return timestamp
+}
+
+func getGroup(event *corev2.Event) (string, error) {
+	var (
+		group string
+		err   error
+	)
+
+	if len(config.groupTemplate) > 0 {
+		group, err = templates.EvalTemplate("group", config.groupTemplate, event)
+		if err != nil {
+			return "", fmt.Errorf("failued to evaluate template %s: %v", config.groupTemplate, err)
+		}
+	} else {
+		group = ""
+	}
+
+	return group, nil
+}
+
+func getComponent(event *corev2.Event) (string, error) {
+	var (
+		component string
+		err       error
+	)
+
+	if len(config.componentTemplate) > 0 {
+		component, err = templates.EvalTemplate("component", config.componentTemplate, event)
+		if err != nil {
+			return "", fmt.Errorf("failued to evaluate template %s: %v", config.componentTemplate, err)
+		}
+	} else {
+		component = event.Check.Name
+	}
+
+	return component, nil
+}
+
+func getClass(event *corev2.Event) (string, error) {
+	var (
+		class string
+		err   error
+	)
+
+	if len(config.classTemplate) > 0 {
+		class, err = templates.EvalTemplate("class", config.classTemplate, event)
+		if err != nil {
+			return "", fmt.Errorf("failued to evaluate template %s: %v", config.classTemplate, err)
+		}
+	} else {
+		class = ""
+	}
+
+	return class, nil
+}
+
 func getDetails(event *corev2.Event) (details interface{}, err error) {
 	if len(config.detailsTemplate) > 0 {
 		detailsStr, err := templates.EvalTemplate("details", config.detailsTemplate, event)
@@ -510,4 +668,61 @@ func getDetails(event *corev2.Event) (details interface{}, err error) {
 		details = event
 	}
 	return details, nil
+}
+
+func getClientUrl(event *corev2.Event) string {
+	if config.sensuBaseUrl == "" {
+		return ""
+	}
+
+	return fmt.Sprintf(
+		"%s/c/~/n/%s/events/%s/%s",
+		strings.TrimSuffix(config.sensuBaseUrl, "/"),
+		event.Namespace,
+		event.Entity.Name,
+		event.Check.Name,
+	)
+}
+
+type Link struct {
+	Text string `json:"text"`
+	Href string `json:"href"`
+}
+
+func isLink(s string) bool {
+	_, err := url.ParseRequestURI(s)
+
+	return err == nil
+}
+
+func getLinks(event *corev2.Event) []interface{} {
+	links := make([]interface{}, 0, len(event.Check.Annotations))
+
+	if !config.linkAnnotations {
+		return links
+	}
+
+	for key, value := range event.Check.Annotations {
+		if isLink(value) {
+			links = append(
+				links, Link{
+					Text: fmt.Sprintf("check %s", key),
+					Href: value,
+				},
+			)
+		}
+	}
+
+	for key, value := range event.Entity.Annotations {
+		if isLink(value) {
+			links = append(
+				links, Link{
+					Text: fmt.Sprintf("entity %s", key),
+					Href: value,
+				},
+			)
+		}
+	}
+
+	return links
 }

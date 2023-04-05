@@ -47,17 +47,24 @@ Available Commands:
 
 Flags:
   -e, --alternate-endpoint string   The endpoint to use to send the PagerDuty events, can be set with PAGERDUTY_ALTERNATE_ENDPOINT
+      --class-template string       Template for PD-CEF class field, can be set with PAGERDUTY_CLASS_TEMPLATE
+      --client-name string          Name for the client, this will appear in Pagerduty when events are logged (default "Sensu")
+      --component-template string   Template for PD-CEF component field, can be set with PAGERDUTY_COMPONENT_TEMPLATE
       --contact-routing             Enable contact routing
   -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, can be set with PAGERDUTY_DEDUP_KEY_TEMPLATE (default "{{.Entity.Name}}-{{.Check.Name}}")
       --details-format string       The format of the details output ('string' or 'json'), can be set with PAGERDUTY_DETAILS_FORMAT (default "string")
   -d, --details-template string     The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)
+      --group-template string       Template for PD-CEF group field, can be set with PAGERDUTY_GROUP_TEMPLATE
   -h, --help                        help for sensu-pagerduty-handler
+  -l, --link-annotations            Add links for any annotations that are a URL
+  -u, --sensu-base-url string       Base URL for sensu. The handler will add a link to the event using this
   -s, --status-map string           The status map used to translate a Sensu check status to a PagerDuty severity, can be set with PAGERDUTY_STATUS_MAP
   -S, --summary-template string     The template for the alert summary, can be set with PAGERDUTY_SUMMARY_TEMPLATE (default "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}")
       --team string                 Envvar name for pager team(alphanumeric and underscores) holding PagerDuty V2 API authentication token, can be set with PAGERDUTY_TEAM
       --team-suffix string          Pager team suffix string to append if missing from team name, can be set with PAGERDUTY_TEAM_SUFFIX (default "_pagerduty_token")
       --timeout uint                The maximum amount of time in seconds to wait for the event to be created, can be set with PAGERDUTY_TIMEOUT (default 30)
   -t, --token string                The PagerDuty V2 API authentication token, can be set with PAGERDUTY_TOKEN
+  -T, --use-event-timestamp         Use the timestamp from the Sensu event for the PD-CEF timestamp field
 
 Use "sensu-pagerduty-handler [command] --help" for more information about a command.
 ```
@@ -159,9 +166,13 @@ override the corresponding environment variable.
 | Argument             | Environment Variable         |
 |----------------------|------------------------------|
 | --alternate-endpoint | PAGERDUTY_ALTERNATE_ENDPOINT |
+| --class-template     | PAGERDUTY_CLASS_TEMPLATE     |
+| --component-template | PAGERDUTY_COMPONENT_TEMPLATE |
+| --group-template     | PAGERDUTY_GROUP_TEMPLATE     | 
 | --dedup-key-template | PAGERDUTY_DEDUP_KEY_TEMPLATE |
 | --details-template   | PAGERDUTY_DETAILS_TEMPLATE   |
 | --details-format     | PAGERDUTY_DETAILS_FORMAT     |
+| --sensu-base-url     | PAGERDUTY_SENSU_BASE_URL     |
 | --status-map         | PAGERDUTY_STATUS_MAP         |
 | --summary-template   | PAGERDUTY_SUMMARY_TEMPLATE   |
 | --team               | PAGERDUTY_TEAM               |
