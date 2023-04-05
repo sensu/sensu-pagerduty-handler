@@ -347,6 +347,7 @@ func manageIncident(event *corev2.Event, token string) error {
 		Action:     action,
 		Payload:    &pdPayload,
 		DedupKey:   dedupKey,
+		Links:      getPagerDutyLinks(event),
 	}
 
 	eventResponse, err := pagerduty.ManageEvent(pdEvent)
@@ -468,4 +469,25 @@ func getDetails(event *corev2.Event) (details interface{}, err error) {
 		details = event
 	}
 	return details, nil
+}
+
+type Link struct {
+	Text string `json:"text"`
+	Href string `json:"href"`
+}
+
+func getPagerDutyLinks(event *corev2.Event) []interface{} {
+	var output []interface{}
+	output = make([]interface{}, 0, len(event.Check.Annotations))
+
+	for name, value := range event.Check.Annotations {
+		if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") { // value seems to be a link
+			output = append(output, Link{
+				Text: name,
+				Href: value,
+			})
+		}
+	}
+
+	return output
 }
