@@ -7,9 +7,14 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## 2.5.0 - 2023-05-03
+
+### Added
+- Add `--alternate-endpoint` option to be able to send events to a different endpoint than the PagerDuty API
+
 ## 2.4.0 - 2023-04-04
 
-###
+### Added
 - Add `--details-format` option to be able to specify if the event details should be sent as a string or a JSON document
 
 ## 2.3.0 – 2022-05-06
