@@ -1,33 +1,37 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sensu/sensu-pagerduty-handler/pagerduty"
 	"log"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
-	"github.com/PagerDuty/go-pagerduty"
-	"github.com/sensu-community/sensu-plugin-sdk/sensu"
-	"github.com/sensu-community/sensu-plugin-sdk/templates"
-	corev2 "github.com/sensu/sensu-go/api/core/v2"
+	corev2 "github.com/sensu/core/v2"
+	"github.com/sensu/sensu-plugin-sdk/sensu"
+	"github.com/sensu/sensu-plugin-sdk/templates"
 	"golang.org/x/exp/slices"
 )
 
 type HandlerConfig struct {
 	sensu.PluginConfig
-	authToken        string
-	dedupKeyTemplate string
-	statusMapJSON    string
-	summaryTemplate  string
-	teamName         string
-	teamSuffix       string
-	detailsTemplate  string
-	detailsFormat    string
-	contactRouting   bool
-	contacts         []string
+	authToken         string
+	dedupKeyTemplate  string
+	statusMapJSON     string
+	summaryTemplate   string
+	teamName          string
+	teamSuffix        string
+	detailsTemplate   string
+	detailsFormat     string
+	alternateEndpoint string
+	contactRouting    bool
+	contacts          []string
 }
 
 type eventStatusMap map[string][]uint32
@@ -60,8 +64,8 @@ var (
 		},
 	}
 
-	pagerDutyConfigOptions = []*sensu.PluginConfigOption{
-		{
+	pagerDutyConfigOptions = []sensu.ConfigOption{
+		&sensu.PluginConfigOption[string]{
 			Path:      "token",
 			Env:       "PAGERDUTY_TOKEN",
 			Argument:  "token",
@@ -71,7 +75,7 @@ var (
 			Value:     &config.authToken,
 			Default:   "",
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:     "team",
 			Env:      "PAGERDUTY_TEAM",
 			Argument: "team",
@@ -79,7 +83,7 @@ var (
 			Value:    &config.teamName,
 			Default:  "",
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:     "team-suffix",
 			Env:      "PAGERDUTY_TEAM_SUFFIX",
 			Argument: "team-suffix",
@@ -87,7 +91,7 @@ var (
 			Value:    &config.teamSuffix,
 			Default:  "_pagerduty_token",
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "dedup-key-template",
 			Env:       "PAGERDUTY_DEDUP_KEY_TEMPLATE",
 			Argument:  "dedup-key-template",
@@ -96,7 +100,7 @@ var (
 			Value:     &config.dedupKeyTemplate,
 			Default:   "{{.Entity.Name}}-{{.Check.Name}}",
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "status-map",
 			Env:       "PAGERDUTY_STATUS_MAP",
 			Argument:  "status-map",
@@ -105,7 +109,7 @@ var (
 			Value:     &config.statusMapJSON,
 			Default:   "",
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "summary-template",
 			Env:       "PAGERDUTY_SUMMARY_TEMPLATE",
 			Argument:  "summary-template",
@@ -114,7 +118,7 @@ var (
 			Value:     &config.summaryTemplate,
 			Default:   "{{.Entity.Name}}/{{.Check.Name}} : {{.Check.Output}}",
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "details-template",
 			Env:       "PAGERDUTY_DETAILS_TEMPLATE",
 			Argument:  "details-template",
@@ -123,7 +127,7 @@ var (
 			Value:     &config.detailsTemplate,
 			Default:   "",
 		},
-		{
+		&sensu.PluginConfigOption[string]{
 			Path:      "details-format",
 			Env:       "PAGERDUTY_DETAILS_FORMAT",
 			Argument:  "details-format",
@@ -132,7 +136,25 @@ var (
 			Value:     &config.detailsFormat,
 			Default:   "string",
 		},
-		{
+		&sensu.PluginConfigOption[string]{
+			Path:      "alternate-endpoint",
+			Env:       "PAGERDUTY_ALTERNATE_ENDPOINT",
+			Argument:  "alternate-endpoint",
+			Shorthand: "e",
+			Usage:     "The endpoint to use to send the PagerDuty events, can be set with PAGERDUTY_ALTERNATE_ENDPOINT",
+			Value:     &config.alternateEndpoint,
+			Default:   "",
+		},
+		&sensu.PluginConfigOption[uint64]{
+			Path:      "timeout",
+			Env:       "PAGERDUTY_TIMEOUT",
+			Argument:  "timeout",
+			Shorthand: "",
+			Usage:     "The maximum amount of time in seconds to wait for the event to be created, can be set with PAGERDUTY_TIMEOUT",
+			Value:     &config.Timeout,
+			Default:   uint64(30),
+		},
+		&sensu.PluginConfigOption[bool]{
 			Path:     "",
 			Env:      "",
 			Argument: "contact-routing",
@@ -144,7 +166,8 @@ var (
 )
 
 func main() {
-	goHandler := sensu.NewGoHandler(&config.PluginConfig, pagerDutyConfigOptions, checkArgs, handleEvent)
+	//goHandler := sensu.NewGoHandler(&config.PluginConfig, pagerDutyConfigOptions, checkArgs, handleEvent)
+	goHandler := sensu.NewHandler(&config.PluginConfig, pagerDutyConfigOptions, checkArgs, handleEvent)
 	goHandler.Execute()
 }
 
@@ -213,6 +236,12 @@ func checkArgs(event *corev2.Event) error {
 
 	if !detailsFormat(config.detailsFormat).IsValid() {
 		return fmt.Errorf("invalid details format: %s", config.detailsFormat)
+	}
+
+	if len(config.alternateEndpoint) != 0 {
+		if _, err := url.Parse(config.alternateEndpoint); err != nil {
+			return fmt.Errorf("invalid alternate endpoint: %s", config.alternateEndpoint)
+		}
 	}
 
 	return nil
@@ -299,6 +328,13 @@ func getContactToken(contact string) (string, error) {
 }
 
 func manageIncident(event *corev2.Event, token string) error {
+	ctx := context.Background()
+	if config.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(config.Timeout)*time.Second)
+		defer cancel()
+	}
+
 	severity, err := getPagerDutySeverity(event, config.statusMapJSON)
 	if err != nil {
 		return err
@@ -349,7 +385,12 @@ func manageIncident(event *corev2.Event, token string) error {
 		DedupKey:   dedupKey,
 	}
 
-	eventResponse, err := pagerduty.ManageEvent(pdEvent)
+	client := pagerduty.NewClient()
+	if len(config.alternateEndpoint) > 0 {
+		client.AlternateEndpoint(config.alternateEndpoint)
+	}
+
+	eventResponse, err := client.ManageEventWithContext(ctx, &pdEvent)
 	if err != nil {
 		log.Printf("Warning Event Send failed, sending fallback event\n %s", err.Error())
 		failPayload := pagerduty.V2Payload{
@@ -366,7 +407,7 @@ func manageIncident(event *corev2.Event, token string) error {
 			DedupKey:   dedupKey,
 		}
 
-		failResponse, err := pagerduty.ManageEvent(failEvent)
+		failResponse, err := client.ManageEventWithContext(ctx, &failEvent)
 		if err != nil {
 			return err
 		}
