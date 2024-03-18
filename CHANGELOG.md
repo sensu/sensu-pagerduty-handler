@@ -7,6 +7,19 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+- Add `--client-name` and `--sensu-base-url`. If provided, these options add a link to the Sensu dashboard from the
+  Pagerduty Alert.
+- Add `--link-annotations` option. If set, this option will any links provided in the check or entity annotations as
+  links in the Pagerduty Event.
+- Add ability to template additional PD-CEF Fields from Sensu event data:
+  - Add `--use-event-timestamp` option. If set this option will set the `Timestamp` field to the
+    timestamp of the Sensu event.
+  - Add `--class-template`, `--group-template` and `--component-template` option. If provided, this option allows for
+    the `Class`, `Group` and `Component` PD-CEF fields to be templated from Sensu event data. Note the
+    `Component` field is set to the Sensu events `.Check.Name` by default if no template is provided to retain
+    compatibility.
+
 ## 2.6.0 - 2024-02-08
 
 ### Changed
