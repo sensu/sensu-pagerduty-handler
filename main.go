@@ -500,7 +500,13 @@ func getDetails(event *corev2.Event) (details interface{}, err error) {
 		details = detailsStr
 		if config.detailsFormat == jsonDetailsFormat.String() {
 			var msgMap interface{}
-			err = json.Unmarshal([]byte(detailsStr), &msgMap)
+
+			// Marshal received string to json
+			parsedJson, err := json.Marshal(detailsStr)
+			if err != nil {
+				return "", fmt.Errorf("failed to marshal json details: %v", err)
+			}
+			err = json.Unmarshal(parsedJson, &msgMap)
 			if err != nil {
 				return "", fmt.Errorf("failed to unmarshal json details: %v", err)
 			}
