@@ -123,7 +123,7 @@ If you're using an earlier version of sensuctl, you can find the asset on the
 [Bonsai Asset Index][7].
 
 ### Handler definition
-
+`When --details-format is 'string'`
 ```yml
 ---
 type: Handler
@@ -140,6 +140,33 @@ spec:
     --summary-template "[{{.Entity.Namespace}}] {{.Entity.Name}}/{{.Check.Name}}: {{.Check.State}}"
     --details-template "{{.Check.Output}}\n\n{{.Check}}"
     --details-format string
+  timeout: 10
+  runtime_assets:
+    - sensu/sensu-pagerduty-handler
+  filters:
+    - is_incident
+  secrets:
+    - name: PAGERDUTY_TOKEN
+      secret: pagerduty_authtoken
+```
+
+`When --details-format is 'json'`
+```yml
+---
+type: Handler
+api_version: core/v2
+metadata:
+  name: pagerduty
+  namespace: default
+spec:
+  type: pipe
+  command: >-
+    sensu-pagerduty-handler
+    --dedup-key-template "{{.Entity.Namespace}}-{{.Entity.Name}}-{{.Check.Name}}"
+    --status-map "{\"info\":[0],\"warning\": [1],\"critical\": [2],\"error\": [3,127]}"
+    --summary-template "[{{.Entity.Namespace}}] {{.Entity.Name}}/{{.Check.Name}}: {{.Check.State}}"
+    --details-template '{"output":"{{.Check.Output}}","check":"{{.Check.Name}}"}'
+    --details-format json
   timeout: 10
   runtime_assets:
     - sensu/sensu-pagerduty-handler
