@@ -123,7 +123,7 @@ If you're using an earlier version of sensuctl, you can find the asset on the
 [Bonsai Asset Index][7].
 
 ### Handler definition
-`When --details-format is 'string'`
+When `--details-format` is set to `string` the `--details-template` option can be any string.
 ```yml
 ---
 type: Handler
@@ -150,7 +150,7 @@ spec:
       secret: pagerduty_authtoken
 ```
 
-`When --details-format is 'json'`
+When `--details-format` is set to `json` the `--details-template` option needs to contain a valid JSON document.
 ```yml
 ---
 type: Handler
