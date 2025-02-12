@@ -500,11 +500,14 @@ func getDetails(event *corev2.Event) (details interface{}, err error) {
 		details = detailsStr
 		if config.detailsFormat == jsonDetailsFormat.String() {
 			var msgMap interface{}
+			fmt.Println("preeval", config.detailsTemplate)
+			fmt.Println("details", detailsStr)
 			err = json.Unmarshal([]byte(detailsStr), &msgMap)
 			if err != nil {
-				return "", fmt.Errorf("failed to unmarshal json details: %v", err)
+				return "", fmt.Errorf("--details-template needs to be a valid json document: %v", err)
 			}
 			details = msgMap
+			fmt.Println("resolved", details)
 		}
 	} else {
 		details = event
