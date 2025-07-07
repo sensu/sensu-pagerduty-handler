@@ -445,39 +445,47 @@ func Test_getContactToken(t *testing.T) {
 
 func Test_getTimestamp(t *testing.T) {
 	originalConfig := config
+	defer func() { config = originalConfig }()
 
-	now := time.Now()
-
-	type args struct {
-		event *corev2.Event
-	}
 	tests := []struct {
-		config HandlerConfig
-		name   string
-		args   args
-		want   string
+		name              string
+		useEventTimestamp bool
+		eventTimestamp    int64
+		want              string
 	}{
 		{
-			config: HandlerConfig{useEventTimestamp: false},
-			name:   "dont-use-event-timestamp",
-			args:   args{event: &eventWithStatus},
-			want:   "",
+			name:              "do not use event timestamp",
+			useEventTimestamp: false,
+			eventTimestamp:    1561246706000,
+			want:              "",
 		},
 		{
-			config: HandlerConfig{useEventTimestamp: true},
-			name:   "use-event-timestamp",
-			args:   args{event: &corev2.Event{Timestamp: now.Unix()}},
-			want:   now.Format(time.RFC3339),
+			name:              "use event timestamp",
+			useEventTimestamp: true,
+			eventTimestamp:    1561246706000,
+			want:              time.Unix(1561246706, 0).Format("2006-01-02T15:04:05.000-0700"),
+		},
+		{
+			name:              "use event timestamp with ms precision",
+			useEventTimestamp: true,
+			eventTimestamp:    1561246706123,
+			want:              time.Unix(1561246706, 123*int64(time.Millisecond)).Format("2006-01-02T15:04:05.000-0700"),
+		},
+		{
+			name:              "zero timestamp",
+			useEventTimestamp: true,
+			eventTimestamp:    0,
+			want:              time.Unix(0, 0).Format("2006-01-02T15:04:05.000-0700"),
 		},
 	}
+
 	for _, tt := range tests {
-		t.Run(
-			tt.name, func(t *testing.T) {
-				config = tt.config
-				assert.Equalf(t, tt.want, getTimestamp(tt.args.event), "getTimestamp(%v)", tt.args.event)
-			},
-		)
-		config = originalConfig
+		t.Run(tt.name, func(t *testing.T) {
+			config.useEventTimestamp = tt.useEventTimestamp
+			event := &corev2.Event{Timestamp: tt.eventTimestamp}
+			got := getTimestamp(event)
+			assert.Equalf(t, tt.want, got, "getTimestamp(%v)", event)
+		})
 	}
 }
 
