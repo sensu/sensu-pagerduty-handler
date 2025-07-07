@@ -588,7 +588,12 @@ func getSummary(event *corev2.Event) (string, error) {
 func getTimestamp(event *corev2.Event) string {
 	timestamp := ""
 	if config.useEventTimestamp {
-		timestamp = time.Unix(event.Timestamp, 0).Format(time.RFC3339)
+		sec := event.Timestamp / 1000
+		nsec := (event.Timestamp % 1000) * int64(time.Millisecond)
+		// Convert the Sensu event timestamp to a time.Time object
+		t := time.Unix(sec, nsec)
+		// Format the time in the desired layout
+		timestamp = t.Format("2006-01-02T15:04:05.000-0700")
 	}
 
 	return timestamp
