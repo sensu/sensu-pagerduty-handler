@@ -22,17 +22,18 @@ import (
 
 type HandlerConfig struct {
 	sensu.PluginConfig
-	authToken         string
-	dedupKeyTemplate  string
-	statusMapJSON     string
-	summaryTemplate   string
-	teamName          string
-	teamSuffix        string
-	detailsTemplate   string
-	detailsFormat     string
-	alternateEndpoint string
-	contactRouting    bool
-	contacts          []string
+	authToken            string
+	dedupKeyTemplate     string
+	statusMapJSON        string
+	summaryTemplate      string
+	teamName             string
+	teamSuffix           string
+	detailsTemplate      string
+	detailsFormat        string
+	alternateEndpoint    string
+	contactRouting       bool
+	contacts             []string
+	customFieldTemplates string
 }
 
 type eventStatusMap map[string][]uint32
@@ -162,6 +163,14 @@ var (
 			Usage:    "Enable contact routing",
 			Value:    &config.contactRouting,
 			Default:  false,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:     "custom-field-template",
+			Env:      "PAGERDUTY_CUSTOM_FIELD_TEMPLATE",
+			Argument: "custom-field-template",
+			Usage:    "Custom field template in key=value format, can be set with PAGERDUTY_CUSTOM_FIELD_TEMPLATE (use semicolon to separate multiple fields)",
+			Value:    &config.customFieldTemplates,
+			Default:  "",
 		},
 	}
 )
@@ -352,18 +361,27 @@ func manageIncident(event *corev2.Event, token string) error {
 		return err
 	}
 
+	// Get custom fields
+	customFields, err := getCustomFields(event)
+	if err != nil {
+		return err
+	}
+
 	// "The maximum permitted length of PG event is 512 KB. Let's limit check output to 256KB to prevent triggering a failed send"
 	if len(event.Check.Output) > 256000 {
 		log.Printf("Warning Incident Payload Truncated!")
 		event.Check.Output = "WARNING Truncated:i\n" + event.Check.Output[:256000] + "..."
 	}
 
+	// Merge custom fields with details
+	finalDetails := mergeDetailsWithCustomFields(details, customFields)
+
 	pdPayload := pagerduty.V2Payload{
 		Source:    event.Entity.Name,
 		Component: event.Check.Name,
 		Severity:  severity,
 		Summary:   summary,
-		Details:   details,
+		Details:   finalDetails,
 	}
 
 	action := "trigger"
@@ -513,4 +531,75 @@ func getDetails(event *corev2.Event) (details interface{}, err error) {
 		details = event
 	}
 	return details, nil
+}
+
+func getCustomFields(event *corev2.Event) (map[string]interface{}, error) {
+	customFields := make(map[string]interface{})
+
+	if config.customFieldTemplates == "" {
+		return customFields, nil
+	}
+
+	// Split by semicolon to get individual field templates
+	templateStrings := strings.Split(config.customFieldTemplates, ";")
+
+	for _, templateStr := range templateStrings {
+		templateStr = strings.TrimSpace(templateStr)
+		if templateStr == "" {
+			continue
+		}
+
+		// Split on the first '=' to separate key and value
+		parts := strings.SplitN(templateStr, "=", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid custom field template format: %s (expected key=value)", templateStr)
+		}
+
+		key := strings.TrimSpace(parts[0])
+		valueTemplate := strings.TrimSpace(parts[1])
+
+		if key == "" {
+			return nil, fmt.Errorf("custom field key cannot be empty in template: %s", templateStr)
+		}
+
+		// Evaluate the template for the value
+		value, err := templates.EvalTemplate(key, valueTemplate, event)
+		if err != nil {
+			return nil, fmt.Errorf("failed to evaluate custom field template for key '%s': %v", key, err)
+		}
+
+		customFields[key] = value
+	}
+
+	return customFields, nil
+}
+
+func mergeDetailsWithCustomFields(details interface{}, customFields map[string]interface{}) interface{} {
+	// If no custom fields, return details as-is
+	if len(customFields) == 0 {
+		return details
+	}
+
+	// If details is already a map, merge custom fields into it
+	if detailsMap, ok := details.(map[string]interface{}); ok {
+		// Create a copy to avoid modifying the original
+		merged := make(map[string]interface{})
+		for k, v := range detailsMap {
+			merged[k] = v
+		}
+		// Add custom fields (they will override existing keys with the same name)
+		for k, v := range customFields {
+			merged[k] = v
+		}
+		return merged
+	}
+
+	// If details is a string or other type, create a new map with both
+	merged := make(map[string]interface{})
+	merged["details"] = details
+	// Add custom fields
+	for k, v := range customFields {
+		merged[k] = v
+	}
+	return merged
 }
