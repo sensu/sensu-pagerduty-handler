@@ -540,7 +540,6 @@ func getCustomFields(event *corev2.Event) (map[string]interface{}, error) {
 		return customFields, nil
 	}
 
-	// Split by semicolon to get individual field templates
 	templateStrings := strings.Split(config.customFieldTemplates, ";")
 
 	for _, templateStr := range templateStrings {
@@ -549,7 +548,6 @@ func getCustomFields(event *corev2.Event) (map[string]interface{}, error) {
 			continue
 		}
 
-		// Split on the first '=' to separate key and value
 		parts := strings.SplitN(templateStr, "=", 2)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid custom field template format: %s (expected key=value)", templateStr)
@@ -575,29 +573,24 @@ func getCustomFields(event *corev2.Event) (map[string]interface{}, error) {
 }
 
 func mergeDetailsWithCustomFields(details interface{}, customFields map[string]interface{}) interface{} {
-	// If no custom fields, return details as-is
 	if len(customFields) == 0 {
 		return details
 	}
 
-	// If details is already a map, merge custom fields into it
 	if detailsMap, ok := details.(map[string]interface{}); ok {
-		// Create a copy to avoid modifying the original
 		merged := make(map[string]interface{})
 		for k, v := range detailsMap {
 			merged[k] = v
 		}
-		// Add custom fields (they will override existing keys with the same name)
+		// Add custom fields
 		for k, v := range customFields {
 			merged[k] = v
 		}
 		return merged
 	}
-
-	// If details is a string or other type, create a new map with both
 	merged := make(map[string]interface{})
 	merged["details"] = details
-	// Add custom fields
+
 	for k, v := range customFields {
 		merged[k] = v
 	}

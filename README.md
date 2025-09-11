@@ -108,44 +108,6 @@ The valid [PagerDuty alert severity levels][5] are the following:
 * `critical`
 * `error`
 
-### Custom fields
-
-The `--custom-field-template` option allows you to define custom fields that will be populated in the PagerDuty incident's `custom_details` section. This provides a way to add additional context and metadata to your incidents beyond the standard PagerDuty fields.
-
-**Usage:**
-
-```bash
-sensu-pagerduty-handler \
-  --custom-field-template "check_output={{.Check.Output}};client_url=https://sensugourl.com/c/~/n/{{.Entity.Namespace}}/events/{{.Entity.Name}};client={{.Entity.Name}}"
-```
-
-**Format:**
-- Each custom field is defined as `key=value` where the value supports Go template syntax
-- Multiple custom fields are separated by semicolons (`;`)
-- The key will be the field name in the PagerDuty incident's `custom_details`
-- The value template will be evaluated using the Sensu event data
-
-**Examples:**
-
-```bash
-# Single custom field
---custom-field-template "check_output={{.Check.Output}}"
-
-# Multiple custom fields
---custom-field-template "check_output={{.Check.Output}};client={{.Entity.Name}};namespace={{.Entity.Namespace}}"
-
-# Complex template with URL construction
---custom-field-template "client_url=https://sensugourl.com/c/~/n/{{.Entity.Namespace}}/events/{{.Entity.Name}};severity={{.Check.State}}"
-```
-
-**Template Variables:**
-The custom field templates support all the same template variables as other Sensu handlers, including:
-- `{{.Entity.Name}}` - Entity name
-- `{{.Entity.Namespace}}` - Entity namespace
-- `{{.Check.Name}}` - Check name
-- `{{.Check.Output}}` - Check output
-- `{{.Check.State}}` - Check state
-- And many more (see [Sensu template documentation][12])
 
 ## Configuration
 
