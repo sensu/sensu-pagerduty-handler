@@ -426,3 +426,182 @@ func Test_getContactToken(t *testing.T) {
 		})
 	}
 }
+
+func Test_getCustomFields(t *testing.T) {
+	originalConfig := config
+	defer func() { config = originalConfig }()
+
+	event := corev2.FixtureEvent("test-entity", "test-check")
+	event.Check.Output = "test output"
+	event.Entity.Namespace = "default"
+
+	tests := []struct {
+		name           string
+		config         HandlerConfig
+		event          *corev2.Event
+		wantErr        bool
+		expectedFields map[string]interface{}
+	}{
+		{
+			name: "empty custom field templates",
+			config: HandlerConfig{
+				customFieldTemplates: "",
+			},
+			event:          event,
+			wantErr:        false,
+			expectedFields: map[string]interface{}{},
+		},
+		{
+			name: "single custom field template",
+			config: HandlerConfig{
+				customFieldTemplates: "check_output={{.Check.Output}}",
+			},
+			event:   event,
+			wantErr: false,
+			expectedFields: map[string]interface{}{
+				"check_output": "test output",
+			},
+		},
+		{
+			name: "multiple custom field templates",
+			config: HandlerConfig{
+				customFieldTemplates: "check_output={{.Check.Output}};client={{.Entity.Name}};namespace={{.Entity.Namespace}}",
+			},
+			event:   event,
+			wantErr: false,
+			expectedFields: map[string]interface{}{
+				"check_output": "test output",
+				"client":       "test-entity",
+				"namespace":    "default",
+			},
+		},
+		{
+			name: "custom field with complex template",
+			config: HandlerConfig{
+				customFieldTemplates: "client_url=https://sensugourl.com/c/~/n/{{.Entity.Namespace}}/events/{{.Entity.Name}}",
+			},
+			event:   event,
+			wantErr: false,
+			expectedFields: map[string]interface{}{
+				"client_url": "https://sensugourl.com/c/~/n/default/events/test-entity",
+			},
+		},
+		{
+			name: "invalid template format - missing equals",
+			config: HandlerConfig{
+				customFieldTemplates: "invalid_template",
+			},
+			event:   event,
+			wantErr: true,
+		},
+		{
+			name: "invalid template format - empty key",
+			config: HandlerConfig{
+				customFieldTemplates: "={{.Check.Output}}",
+			},
+			event:   event,
+			wantErr: true,
+		},
+		{
+			name: "invalid template syntax",
+			config: HandlerConfig{
+				customFieldTemplates: "check_output={{.InvalidField}}",
+			},
+			event:   event,
+			wantErr: true,
+		},
+		{
+			name: "multiple templates with empty ones",
+			config: HandlerConfig{
+				customFieldTemplates: "check_output={{.Check.Output}};;client={{.Entity.Name}};",
+			},
+			event:   event,
+			wantErr: false,
+			expectedFields: map[string]interface{}{
+				"check_output": "test output",
+				"client":       "test-entity",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config = tt.config
+			got, err := getCustomFields(tt.event)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getCustomFields() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				assert.Equal(t, tt.expectedFields, got)
+			}
+		})
+	}
+}
+
+func Test_mergeDetailsWithCustomFields(t *testing.T) {
+	tests := []struct {
+		name         string
+		details      interface{}
+		customFields map[string]interface{}
+		expected     interface{}
+	}{
+		{
+			name:         "no custom fields",
+			details:      "test details",
+			customFields: map[string]interface{}{},
+			expected:     "test details",
+		},
+		{
+			name:    "details is string, has custom fields",
+			details: "test details",
+			customFields: map[string]interface{}{
+				"custom1": "value1",
+				"custom2": "value2",
+			},
+			expected: map[string]interface{}{
+				"details": "test details",
+				"custom1": "value1",
+				"custom2": "value2",
+			},
+		},
+		{
+			name: "details is map, has custom fields",
+			details: map[string]interface{}{
+				"existing": "value",
+			},
+			customFields: map[string]interface{}{
+				"custom1": "value1",
+				"custom2": "value2",
+			},
+			expected: map[string]interface{}{
+				"existing": "value",
+				"custom1":  "value1",
+				"custom2":  "value2",
+			},
+		},
+		{
+			name: "details is map, custom fields override existing",
+			details: map[string]interface{}{
+				"existing": "original_value",
+				"keep":     "keep_value",
+			},
+			customFields: map[string]interface{}{
+				"existing": "override_value",
+				"custom1":  "value1",
+			},
+			expected: map[string]interface{}{
+				"existing": "override_value",
+				"keep":     "keep_value",
+				"custom1":  "value1",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mergeDetailsWithCustomFields(tt.details, tt.customFields)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}

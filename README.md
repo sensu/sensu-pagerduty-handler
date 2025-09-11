@@ -49,6 +49,7 @@ Flags:
   -e, --alternate-endpoint string   The endpoint to use to send the PagerDuty events, can be set with PAGERDUTY_ALTERNATE_ENDPOINT
       --contact-routing             Enable contact routing
   -k, --dedup-key-template string   The PagerDuty V2 API deduplication key template, can be set with PAGERDUTY_DEDUP_KEY_TEMPLATE (default "{{.Entity.Name}}-{{.Check.Name}}")
+      --custom-field-template string Custom field template in key=value format, can be set with PAGERDUTY_CUSTOM_FIELD_TEMPLATE (use semicolon to separate multiple fields)
       --details-format string       The format of the details output ('string' or 'json'), can be set with PAGERDUTY_DETAILS_FORMAT (default "string")
   -d, --details-template string     The template for the alert details, can be set with PAGERDUTY_DETAILS_TEMPLATE (default full event JSON)
   -h, --help                        help for sensu-pagerduty-handler
@@ -106,6 +107,7 @@ The valid [PagerDuty alert severity levels][5] are the following:
 * `warning`
 * `critical`
 * `error`
+
 
 ## Configuration
 
@@ -177,24 +179,53 @@ spec:
       secret: pagerduty_authtoken
 ```
 
+### Handler definition with custom fields
+
+```yml
+---
+type: Handler
+api_version: core/v2
+metadata:
+  name: pagerduty
+  namespace: default
+spec:
+  type: pipe
+  command: >-
+    sensu-pagerduty-handler
+    --dedup-key-template "{{.Entity.Namespace}}-{{.Entity.Name}}-{{.Check.Name}}"
+    --status-map "{\"info\":[0],\"warning\": [1],\"critical\": [2],\"error\": [3,127]}"
+    --summary-template "[{{.Entity.Namespace}}] {{.Entity.Name}}/{{.Check.Name}}: {{.Check.State}}"
+    --details-template "{{.Check.Output}}\n\n{{.Check}}"
+    --custom-field-template "check_output={{.Check.Output}};client_url=https://sensugourl.com/c/~/n/{{.Entity.Namespace}}/events/{{.Entity.Name}};client={{.Entity.Name}}"
+  timeout: 10
+  runtime_assets:
+    - sensu/sensu-pagerduty-handler
+  filters:
+    - is_incident
+  secrets:
+    - name: PAGERDUTY_TOKEN
+      secret: pagerduty_authtoken
+```
+
 ### Environment variables
 
 Most arguments for this handler are available to be set via environment
 variables. However, any arguments specified directly on the command line
 override the corresponding environment variable.
 
-| Argument             | Environment Variable         |
-|----------------------|------------------------------|
-| --alternate-endpoint | PAGERDUTY_ALTERNATE_ENDPOINT |
-| --dedup-key-template | PAGERDUTY_DEDUP_KEY_TEMPLATE |
-| --details-template   | PAGERDUTY_DETAILS_TEMPLATE   |
-| --details-format     | PAGERDUTY_DETAILS_FORMAT     |
-| --status-map         | PAGERDUTY_STATUS_MAP         |
-| --summary-template   | PAGERDUTY_SUMMARY_TEMPLATE   |
-| --team               | PAGERDUTY_TEAM               |
-| --team-suffix        | PAGERDUTY_TEAM_SUFFIX        |
-| --timeout            | PAGERDUTY_TIMEOUT            |
-| --token              | PAGERDUTY_TOKEN              |
+| Argument                 | Environment Variable             |
+|--------------------------|----------------------------------|
+| --alternate-endpoint     | PAGERDUTY_ALTERNATE_ENDPOINT     |
+| --custom-field-template  | PAGERDUTY_CUSTOM_FIELD_TEMPLATE  |
+| --dedup-key-template     | PAGERDUTY_DEDUP_KEY_TEMPLATE     |
+| --details-template       | PAGERDUTY_DETAILS_TEMPLATE       |
+| --details-format         | PAGERDUTY_DETAILS_FORMAT         |
+| --status-map             | PAGERDUTY_STATUS_MAP             |
+| --summary-template       | PAGERDUTY_SUMMARY_TEMPLATE       |
+| --team                   | PAGERDUTY_TEAM                   |
+| --team-suffix            | PAGERDUTY_TEAM_SUFFIX            |
+| --timeout                | PAGERDUTY_TIMEOUT                |
+| --token                  | PAGERDUTY_TOKEN                  |
 
 **Security Note:** Care should be taken to not expose the auth token for this
 handler by specifying it on the command line or by directly setting the
