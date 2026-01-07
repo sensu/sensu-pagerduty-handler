@@ -48,6 +48,7 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
 github.com/echlebek/crock v1.0.1 h1:KbzamClMIfVIkkjq/GTXf+N16KylYBpiaTitO3f1ujg=
+github.com/echlebek/crock v1.0.1/go.mod h1:/kvwHRX3ZXHj/kHWJkjXDmzzRow54EJuHtQ/PapL/HI=
 github.com/echlebek/timeproxy v1.0.0 h1:V41/v8tmmMDNMA2GrBPI45nlXb3F7+OY+nJz1BqKsCk=
 github.com/echlebek/timeproxy v1.0.0/go.mod h1:0dg2Lnb8no/jFwoMQKMTU6iAivgoMptGqSTprhnrRtk=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
@@ -214,6 +215,7 @@ github.com/sensu/core/v2 v2.16.1/go.mod h1:2etWGsa+nx5G2Q3CKiSJY9kSg8VhCgGzgp1Vy
 github.com/sensu/sensu-api-tools v0.1.0 h1:ctEyFIY1aKis1KqL7wOo+Apg/5t9X6vBVLzrqUUuBkQ=
 github.com/sensu/sensu-api-tools v0.1.0/go.mod h1:SNISS4OhwNSZI9/YKTQr1bghOEwed9ZT4v+ztKk1Mq0=
 github.com/sensu/sensu-go/types v0.12.0 h1:t8gupS1QhkuA/b9LzTaF0h6DBGHX2UzKHyuBPhj/PoA=
+github.com/sensu/sensu-go/types v0.12.0/go.mod h1:PHk3pUJHCsFzoXnKmm9ERfnHnerzaG2rjISWGcZq3os=
 github.com/sensu/sensu-licensing/v2 v2.2.1 h1:9JI4iVm4ujWN4etI/Kdper6Q2lOn3HIEaGe234N8j40=
 github.com/sensu/sensu-licensing/v2 v2.2.1/go.mod h1:53lwddwN4XwZUld5KtnWQduSH6F8rBOsWuEk2EUeooI=
 github.com/sensu/sensu-plugin-sdk v0.19.0 h1:5r8f/+b0EY2YlNHyNYIY2pYz77JgGHvutFNCjReqMJE=
