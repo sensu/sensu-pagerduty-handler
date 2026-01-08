@@ -1,6 +1,6 @@
 module github.com/sensu/sensu-pagerduty-handler
 
-go 1.20
+go 1.23
 
 require (
 	github.com/sensu/core/v2 v2.16.1
