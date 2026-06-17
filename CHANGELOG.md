@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 2.7.0 - 2026-06-17
+
+### Added
+- Added `--custom-field-template` to define custom fields that will be populated in the PagerDuty incident's `custom_details` section.
+
+### Security
+- Updated `google.golang.org/grpc` to v1.81.1 (fixes CVE-2023-44487, authorization bypass via missing leading slash)
+- Updated `golang.org/x/net` to v0.56.0 (fixes HTTP/2 rapid reset, XSS, proxy bypass, stream cancellation vulnerabilities)
+- Updated `github.com/golang-jwt/jwt/v4` to v4.5.2 (fixes excessive memory allocation during header parsing)
+- Updated `github.com/sirupsen/logrus` to v1.9.4 (fixes DoS via Entry.Writer())
+- Updated `google.golang.org/protobuf` to v1.36.11 (fixes infinite loop in protojson.Unmarshal)
+
+### Fixed
+- Removed debug print statements from `getDetails()` function
+- Fixed typo in payload truncation warning message
+
 ## 2.6.1 - 2024-08-01
 
 ### Changed
