@@ -22,24 +22,25 @@ import (
 
 type HandlerConfig struct {
 	sensu.PluginConfig
-	authToken         string
-	dedupKeyTemplate  string
-	statusMapJSON     string
-	summaryTemplate   string
-	teamName          string
-	teamSuffix        string
-	detailsTemplate   string
-	detailsFormat     string
-	alternateEndpoint string
-	contactRouting    bool
-	contacts          []string
-	clientName        string
-	sensuBaseUrl      string
-	linkAnnotations   bool
-	useEventTimestamp bool
-	classTemplate     string
-	groupTemplate     string
-	componentTemplate string
+	authToken            string
+	dedupKeyTemplate     string
+	statusMapJSON        string
+	summaryTemplate      string
+	teamName             string
+	teamSuffix           string
+	detailsTemplate      string
+	detailsFormat        string
+	alternateEndpoint    string
+	contactRouting       bool
+	contacts             []string
+	customFieldTemplates string
+	clientName           string
+	sensuBaseUrl         string
+	linkAnnotations      bool
+	useEventTimestamp    bool
+	classTemplate        string
+	groupTemplate        string
+	componentTemplate    string
 }
 
 type eventStatusMap map[string][]uint32
@@ -169,6 +170,14 @@ var (
 			Usage:    "Enable contact routing",
 			Value:    &config.contactRouting,
 			Default:  false,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:     "custom-field-template",
+			Env:      "PAGERDUTY_CUSTOM_FIELD_TEMPLATE",
+			Argument: "custom-field-template",
+			Usage:    "Custom field template in key=value format, can be set with PAGERDUTY_CUSTOM_FIELD_TEMPLATE (use semicolon to separate multiple fields)",
+			Value:    &config.customFieldTemplates,
+			Default:  "",
 		},
 		&sensu.PluginConfigOption[string]{
 			Path:     "client-name",
@@ -420,6 +429,11 @@ func manageIncident(event *corev2.Event, token string) error {
 		return err
 	}
 
+	customFields, err := getCustomFields(event)
+	if err != nil {
+		return err
+	}
+
 	group, err := getGroup(event)
 	if err != nil {
 		return err
@@ -438,15 +452,17 @@ func manageIncident(event *corev2.Event, token string) error {
 	// "The maximum permitted length of PG event is 512 KB. Let's limit check output to 256KB to prevent triggering a failed send"
 	if len(event.Check.Output) > 256000 {
 		log.Printf("Warning Incident Payload Truncated!")
-		event.Check.Output = "WARNING Truncated:i\n" + event.Check.Output[:256000] + "..."
+		event.Check.Output = "WARNING Truncated:\n" + event.Check.Output[:256000] + "..."
 	}
+
+	finalDetails := mergeDetailsWithCustomFields(details, customFields)
 
 	pdPayload := pagerduty.V2Payload{
 		Source:    event.Entity.Name,
 		Component: component,
 		Severity:  severity,
 		Summary:   summary,
-		Details:   details,
+		Details:   finalDetails,
 		Class:     class,
 		Group:     group,
 		Timestamp: getTimestamp(event),
@@ -663,14 +679,11 @@ func getDetails(event *corev2.Event) (details interface{}, err error) {
 		details = detailsStr
 		if config.detailsFormat == jsonDetailsFormat.String() {
 			var msgMap interface{}
-			fmt.Println("preeval", config.detailsTemplate)
-			fmt.Println("details", detailsStr)
 			err = json.Unmarshal([]byte(detailsStr), &msgMap)
 			if err != nil {
 				return "", fmt.Errorf("--details-template needs to be a valid json document: %v", err)
 			}
 			details = msgMap
-			fmt.Println("resolved", details)
 		}
 	} else {
 		details = event
@@ -733,4 +746,66 @@ func getLinks(event *corev2.Event) []interface{} {
 	}
 
 	return links
+}
+
+func getCustomFields(event *corev2.Event) (map[string]interface{}, error) {
+	customFields := make(map[string]interface{})
+
+	if config.customFieldTemplates == "" {
+		return customFields, nil
+	}
+
+	templateStrings := strings.Split(config.customFieldTemplates, ";")
+
+	for _, templateStr := range templateStrings {
+		templateStr = strings.TrimSpace(templateStr)
+		if templateStr == "" {
+			continue
+		}
+
+		parts := strings.SplitN(templateStr, "=", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid custom field template format: %s (expected key=value)", templateStr)
+		}
+
+		key := strings.TrimSpace(parts[0])
+		valueTemplate := strings.TrimSpace(parts[1])
+
+		if key == "" {
+			return nil, fmt.Errorf("custom field key cannot be empty in template: %s", templateStr)
+		}
+
+		value, err := templates.EvalTemplate(key, valueTemplate, event)
+		if err != nil {
+			return nil, fmt.Errorf("failed to evaluate custom field template for key '%s': %v", key, err)
+		}
+
+		customFields[key] = value
+	}
+
+	return customFields, nil
+}
+
+func mergeDetailsWithCustomFields(details interface{}, customFields map[string]interface{}) interface{} {
+	if len(customFields) == 0 {
+		return details
+	}
+
+	if detailsMap, ok := details.(map[string]interface{}); ok {
+		merged := make(map[string]interface{})
+		for k, v := range detailsMap {
+			merged[k] = v
+		}
+		for k, v := range customFields {
+			merged[k] = v
+		}
+		return merged
+	}
+
+	merged := make(map[string]interface{})
+	merged["details"] = details
+	for k, v := range customFields {
+		merged[k] = v
+	}
+	return merged
 }
